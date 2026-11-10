@@ -1,0 +1,1101 @@
+{
+  "categories": [
+    {
+      "id": "novels",
+      "name": "നോവലുകൾ (Novels)",
+      "color": "#3b82f6",
+      "side": "left",
+      "rows": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "stories",
+      "name": "കഥകൾ (Stories)",
+      "color": "#10b981",
+      "side": "left",
+      "rows": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "science",
+      "name": "ശാസ്ത്രവും സാങ്കേതികതയും (Science & Tech)",
+      "color": "#8b5cf6",
+      "side": "left",
+      "rows": [
+        5,
+        6
+      ]
+    },
+    {
+      "id": "history",
+      "name": "ചരിത്രം (History)",
+      "color": "#f59e0b",
+      "side": "left",
+      "rows": [
+        7,
+        8
+      ]
+    },
+    {
+      "id": "literature",
+      "name": "സാഹിത്യവും തത്ത്വചിന്തയും (Philosophy & Literature)",
+      "color": "#ec4899",
+      "side": "right",
+      "rows": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "education",
+      "name": "പഠന സഹായികൾ (Study & Education)",
+      "color": "#06b6d4",
+      "side": "right",
+      "rows": [
+        3,
+        4
+      ]
+    },
+    {
+      "id": "poetry",
+      "name": "കവിതകൾ (Poetry)",
+      "color": "#e11d48",
+      "side": "right",
+      "rows": [
+        5,
+        6
+      ]
+    },
+    {
+      "id": "biography",
+      "name": "ജീവചരിത്രം (Biography & General)",
+      "color": "#84cc16",
+      "side": "right",
+      "rows": [
+        7,
+        8
+      ]
+    },
+    {
+      "id": "kids_stories",
+      "name": "കുട്ടികളുടെ സാഹിത്യം (Children Stories)",
+      "color": "#06b6d4",
+      "side": "left",
+      "rows": [
+        9
+      ]
+    }
+  ],
+  "shelves": [
+    {
+      "name": "Left_Row1_Shelf1",
+      "side": "left",
+      "row": 1,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        -5.7,
+        6.36,
+        0.0
+      ],
+      "three_pos": [
+        -5.7,
+        0.0,
+        -6.36
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "novels"
+    },
+    {
+      "name": "Left_Row1_Shelf2",
+      "side": "left",
+      "row": 1,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        -3.8,
+        6.36,
+        0.0
+      ],
+      "three_pos": [
+        -3.8,
+        0.0,
+        -6.36
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "novels"
+    },
+    {
+      "name": "Left_Row1_Shelf3",
+      "side": "left",
+      "row": 1,
+      "shelf": "3",
+      "is_half": false,
+      "blender_pos": [
+        -1.9,
+        6.36,
+        0.0
+      ],
+      "three_pos": [
+        -1.9,
+        0.0,
+        -6.36
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "novels"
+    },
+    {
+      "name": "Left_Row2_Shelf1",
+      "side": "left",
+      "row": 2,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        -5.7,
+        4.87,
+        0.0
+      ],
+      "three_pos": [
+        -5.7,
+        0.0,
+        -4.87
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "novels"
+    },
+    {
+      "name": "Left_Row2_Shelf2",
+      "side": "left",
+      "row": 2,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        -3.8,
+        4.87,
+        0.0
+      ],
+      "three_pos": [
+        -3.8,
+        0.0,
+        -4.87
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "novels"
+    },
+    {
+      "name": "Left_Row2_Shelf3",
+      "side": "left",
+      "row": 2,
+      "shelf": "3",
+      "is_half": false,
+      "blender_pos": [
+        -1.9,
+        4.87,
+        0.0
+      ],
+      "three_pos": [
+        -1.9,
+        0.0,
+        -4.87
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "novels"
+    },
+    {
+      "name": "Left_Row3_Shelf1",
+      "side": "left",
+      "row": 3,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        -5.7,
+        3.38,
+        0.0
+      ],
+      "three_pos": [
+        -5.7,
+        0.0,
+        -3.38
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "stories"
+    },
+    {
+      "name": "Left_Row3_Shelf2",
+      "side": "left",
+      "row": 3,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        -3.8,
+        3.38,
+        0.0
+      ],
+      "three_pos": [
+        -3.8,
+        0.0,
+        -3.38
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "stories"
+    },
+    {
+      "name": "Left_Row3_Shelf3",
+      "side": "left",
+      "row": 3,
+      "shelf": "3",
+      "is_half": false,
+      "blender_pos": [
+        -1.9,
+        3.38,
+        0.0
+      ],
+      "three_pos": [
+        -1.9,
+        0.0,
+        -3.38
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "stories"
+    },
+    {
+      "name": "Left_Row4_Shelf1",
+      "side": "left",
+      "row": 4,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        -5.7,
+        1.89,
+        0.0
+      ],
+      "three_pos": [
+        -5.7,
+        0.0,
+        -1.89
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "stories"
+    },
+    {
+      "name": "Left_Row4_Shelf2",
+      "side": "left",
+      "row": 4,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        -3.8,
+        1.89,
+        0.0
+      ],
+      "three_pos": [
+        -3.8,
+        0.0,
+        -1.89
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "stories"
+    },
+    {
+      "name": "Left_Row5_Shelf1",
+      "side": "left",
+      "row": 5,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        -5.7,
+        0.4,
+        0.0
+      ],
+      "three_pos": [
+        -5.7,
+        0.0,
+        -0.4
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "science"
+    },
+    {
+      "name": "Left_Row5_Shelf2",
+      "side": "left",
+      "row": 5,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        -3.8,
+        0.4,
+        0.0
+      ],
+      "three_pos": [
+        -3.8,
+        0.0,
+        -0.4
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "science"
+    },
+    {
+      "name": "Left_Row6_Shelf1",
+      "side": "left",
+      "row": 6,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        -5.7,
+        -1.09,
+        0.0
+      ],
+      "three_pos": [
+        -5.7,
+        0.0,
+        1.09
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "science"
+    },
+    {
+      "name": "Left_Row6_Shelf2",
+      "side": "left",
+      "row": 6,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        -3.8,
+        -1.09,
+        0.0
+      ],
+      "three_pos": [
+        -3.8,
+        0.0,
+        1.09
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "science"
+    },
+    {
+      "name": "Left_Row7_Shelf1",
+      "side": "left",
+      "row": 7,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        -5.7,
+        -2.58,
+        0.0
+      ],
+      "three_pos": [
+        -5.7,
+        0.0,
+        2.58
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "history"
+    },
+    {
+      "name": "Left_Row7_Shelf2",
+      "side": "left",
+      "row": 7,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        -3.8,
+        -2.58,
+        0.0
+      ],
+      "three_pos": [
+        -3.8,
+        0.0,
+        2.58
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "history"
+    },
+    {
+      "name": "Left_Row8_Shelf1",
+      "side": "left",
+      "row": 8,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        -5.7,
+        -4.07,
+        0.0
+      ],
+      "three_pos": [
+        -5.7,
+        0.0,
+        4.07
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "history"
+    },
+    {
+      "name": "Left_Row8_Shelf2",
+      "side": "left",
+      "row": 8,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        -3.8,
+        -4.07,
+        0.0
+      ],
+      "three_pos": [
+        -3.8,
+        0.0,
+        4.07
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "history"
+    },
+    {
+      "name": "Left_Row9_Shelf1",
+      "side": "left",
+      "row": 9,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        -5.7,
+        -5.56,
+        0.0
+      ],
+      "three_pos": [
+        -5.7,
+        0.0,
+        5.56
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "kids_stories"
+    },
+    {
+      "name": "Left_Row9_Shelf2",
+      "side": "left",
+      "row": 9,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        -3.8,
+        -5.56,
+        0.0
+      ],
+      "three_pos": [
+        -3.8,
+        0.0,
+        5.56
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "kids_stories"
+    },
+    {
+      "name": "Right_Row1_Shelf1",
+      "side": "right",
+      "row": 1,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        5.7,
+        6.36,
+        0.0
+      ],
+      "three_pos": [
+        5.7,
+        0.0,
+        -6.36
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "literature"
+    },
+    {
+      "name": "Right_Row1_Shelf2",
+      "side": "right",
+      "row": 1,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        3.8,
+        6.36,
+        0.0
+      ],
+      "three_pos": [
+        3.8,
+        0.0,
+        -6.36
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "literature"
+    },
+    {
+      "name": "Right_Row1_Shelf3",
+      "side": "right",
+      "row": 1,
+      "shelf": "3",
+      "is_half": false,
+      "blender_pos": [
+        1.9,
+        6.36,
+        0.0
+      ],
+      "three_pos": [
+        1.9,
+        0.0,
+        -6.36
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "literature"
+    },
+    {
+      "name": "Right_Row2_Shelf1",
+      "side": "right",
+      "row": 2,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        5.7,
+        4.87,
+        0.0
+      ],
+      "three_pos": [
+        5.7,
+        0.0,
+        -4.87
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "literature"
+    },
+    {
+      "name": "Right_Row2_Shelf2",
+      "side": "right",
+      "row": 2,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        3.8,
+        4.87,
+        0.0
+      ],
+      "three_pos": [
+        3.8,
+        0.0,
+        -4.87
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "literature"
+    },
+    {
+      "name": "Right_Row2_Shelf3",
+      "side": "right",
+      "row": 2,
+      "shelf": "3",
+      "is_half": false,
+      "blender_pos": [
+        1.9,
+        4.87,
+        0.0
+      ],
+      "three_pos": [
+        1.9,
+        0.0,
+        -4.87
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "literature"
+    },
+    {
+      "name": "Right_Row3_Shelf1_Full",
+      "side": "right",
+      "row": 3,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        5.7,
+        3.38,
+        0.0
+      ],
+      "three_pos": [
+        5.7,
+        0.0,
+        -3.38
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "education"
+    },
+    {
+      "name": "Right_Row3_Shelf2_HALF_SHELF_1Bay_5Rows",
+      "side": "right",
+      "row": 3,
+      "shelf": "2",
+      "is_half": true,
+      "blender_pos": [
+        4.275,
+        3.38,
+        0.0
+      ],
+      "three_pos": [
+        4.275,
+        0.0,
+        -3.38
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "education"
+    },
+    {
+      "name": "Right_Row3_Shelf3_Full",
+      "side": "right",
+      "row": 3,
+      "shelf": "3",
+      "is_half": false,
+      "blender_pos": [
+        2.85,
+        3.38,
+        0.0
+      ],
+      "three_pos": [
+        2.85,
+        0.0,
+        -3.38
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "education"
+    },
+    {
+      "name": "Right_Row4_Shelf1",
+      "side": "right",
+      "row": 4,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        5.7,
+        1.89,
+        0.0
+      ],
+      "three_pos": [
+        5.7,
+        0.0,
+        -1.89
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "education"
+    },
+    {
+      "name": "Right_Row4_Shelf2",
+      "side": "right",
+      "row": 4,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        3.8,
+        1.89,
+        0.0
+      ],
+      "three_pos": [
+        3.8,
+        0.0,
+        -1.89
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "education"
+    },
+    {
+      "name": "Right_Row5_Shelf1",
+      "side": "right",
+      "row": 5,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        5.7,
+        0.4,
+        0.0
+      ],
+      "three_pos": [
+        5.7,
+        0.0,
+        -0.4
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "poetry"
+    },
+    {
+      "name": "Right_Row5_Shelf2",
+      "side": "right",
+      "row": 5,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        3.8,
+        0.4,
+        0.0
+      ],
+      "three_pos": [
+        3.8,
+        0.0,
+        -0.4
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "poetry"
+    },
+    {
+      "name": "Right_Row6_Shelf1",
+      "side": "right",
+      "row": 6,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        5.7,
+        -1.09,
+        0.0
+      ],
+      "three_pos": [
+        5.7,
+        0.0,
+        1.09
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "poetry"
+    },
+    {
+      "name": "Right_Row6_Shelf2",
+      "side": "right",
+      "row": 6,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        3.8,
+        -1.09,
+        0.0
+      ],
+      "three_pos": [
+        3.8,
+        0.0,
+        1.09
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "poetry"
+    },
+    {
+      "name": "Right_Row7_Shelf1",
+      "side": "right",
+      "row": 7,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        5.7,
+        -2.58,
+        0.0
+      ],
+      "three_pos": [
+        5.7,
+        0.0,
+        2.58
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "biography"
+    },
+    {
+      "name": "Right_Row7_Shelf2",
+      "side": "right",
+      "row": 7,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        3.8,
+        -2.58,
+        0.0
+      ],
+      "three_pos": [
+        3.8,
+        0.0,
+        2.58
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "biography"
+    },
+    {
+      "name": "Right_Row8_Shelf1",
+      "side": "right",
+      "row": 8,
+      "shelf": "1",
+      "is_half": false,
+      "blender_pos": [
+        5.7,
+        -4.07,
+        0.0
+      ],
+      "three_pos": [
+        5.7,
+        0.0,
+        4.07
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "biography"
+    },
+    {
+      "name": "Right_Row8_Shelf2",
+      "side": "right",
+      "row": 8,
+      "shelf": "2",
+      "is_half": false,
+      "blender_pos": [
+        3.8,
+        -4.07,
+        0.0
+      ],
+      "three_pos": [
+        3.8,
+        0.0,
+        4.07
+      ],
+      "rack_center_levels": [
+        0.202,
+        0.585,
+        0.965,
+        1.344,
+        1.724
+      ],
+      "category": "biography"
+    }
+  ],
+  "door_pos": [
+    0.0,
+    1.6,
+    7.41
+  ],
+  "corridor_x": 0.0
+}

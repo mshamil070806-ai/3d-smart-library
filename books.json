@@ -1,0 +1,492 @@
+[
+  {
+    "id": "BK-001",
+    "barcode": "978817208101",
+    "title": "ആടുജീവിതം (Goat Days)",
+    "author": "ബെന്യാമിൻ (Benyamin)",
+    "category": "novels",
+    "description": "നജീബ് എന്ന മലയാളി ഗൾഫിൽ അനുഭവിച്ച യാതനകളുടെയും അതിജീവനത്തിന്റെയും വികാരനിർഭരമായ കഥ.",
+    "color": "#1e3a8a",
+    "year": "2008"
+  },
+  {
+    "id": "BK-002",
+    "barcode": "978817208102",
+    "title": "ഖസാക്കിന്റെ ഇതിഹാസം",
+    "author": "ഒ. വി. വിജയൻ (O.V. Vijayan)",
+    "category": "novels",
+    "description": "കൂമൻകാവിലെ ആത്മീയവും അസ്തിത്വപരവുമായ സങ്കീർണ്ണതകൾ പറയുന്ന മലയാളത്തിലെ ക്ലാസിക് നോവൽ.",
+    "color": "#1e40af",
+    "year": "1969"
+  },
+  {
+    "id": "BK-003",
+    "barcode": "978817208103",
+    "title": "രണ്ടാമൂഴം",
+    "author": "എം. ടി. വാസുദേവൻ നായർ",
+    "category": "novels",
+    "description": "മഹാഭാരതം ഭീമസേനന്റെ ഹൃദയവ്യഥകളിലൂടെയും ചിന്തകളിലൂടെയും ആവിഷ്കരിച്ച വിഖ്യാത കൃതി.",
+    "color": "#0369a1",
+    "year": "1984"
+  },
+  {
+    "id": "BK-004",
+    "barcode": "978817208104",
+    "title": "കയർ (Kayar)",
+    "author": "തകഴി ശിവശങ്കരപ്പിള്ള",
+    "category": "novels",
+    "description": "കുട്ടനാടിന്റെ രണ്ടര നൂറ്റാണ്ടിലെ സാമൂഹിക മാറ്റങ്ങളെ വരച്ചുകാട്ടുന്ന ഇതിഹാസ നോവൽ.",
+    "color": "#1d4ed8",
+    "year": "1978"
+  },
+  {
+    "id": "BK-005",
+    "barcode": "978817208105",
+    "title": "ചെമ്മീൻ (Chemmeen)",
+    "author": "തകഴി ശിവശങ്കരപ്പിള്ള",
+    "category": "novels",
+    "description": "കറുത്തമ്മയുടെയും പരീക്കുട്ടിയുടെയും അനശ്വരമായ പ്രണയത്തിന്റെയും കടലമ്മയുടെ കോപത്തിന്റെയും കഥ.",
+    "color": "#2563eb",
+    "year": "1956"
+  },
+  {
+    "id": "BK-006",
+    "barcode": "978817208106",
+    "title": "ഒരു ദേശത്തിന്റെ കഥ",
+    "author": "എസ്. കെ. പൊറ്റെക്കാട്ട്",
+    "category": "novels",
+    "description": "അതിരാണിപ്പാടം എന്ന ഗ്രാമത്തിന്റെയും ശ്രീധരൻ എന്ന യുവാവിന്റെയും ആത്മകഥാംശമുള്ള നോവൽ.",
+    "color": "#3b82f6",
+    "year": "1971"
+  },
+  {
+    "id": "BK-007",
+    "barcode": "978817208107",
+    "title": "ആരാച്ചാർ (Aarachar)",
+    "author": "കെ. ആർ. മീര (K.R. Meera)",
+    "category": "novels",
+    "description": "ചേതന എന്ന ആദ്യ വനിതാ ആരാച്ചാരുടെ ജീവിതത്തിലൂടെ അധികാരത്തിന്റെയും സ്ത്രീത്വത്തിന്റെയും വിചാരണ.",
+    "color": "#1e3a8a",
+    "year": "2012"
+  },
+  {
+    "id": "BK-008",
+    "barcode": "978817208108",
+    "title": "മനുഷ്യന് ഒരു ആമുഖം",
+    "author": "സുഭാഷ് ചന്ദ്രൻ",
+    "category": "novels",
+    "description": "താച്ചനക്കര എന്ന ഗ്രാമത്തിൽ ജീവിച്ചുപോയ മനുഷ്യരുടെ പാപങ്ങളുടെയും സ്നേഹത്തിന്റെയും ചരിത്രം.",
+    "color": "#172554",
+    "year": "2010"
+  },
+  {
+    "id": "BK-009",
+    "barcode": "978817208109",
+    "title": "ഉമ്മാച്ചു (Ummachu)",
+    "author": "ഉറൂബ് (Uroob)",
+    "category": "novels",
+    "description": "ഉമ്മാച്ചു, മായൻ, ബീരാൻ എന്നിവരുടെ ത്രികോണ പ്രണയവും പ്രതികാരവും മാനസിക വ്യാപാരങ്ങളും.",
+    "color": "#1e40af",
+    "year": "1954"
+  },
+  {
+    "id": "BK-010",
+    "barcode": "978817208110",
+    "title": "തോട്ടിയുടെ മകൻ",
+    "author": "തകഴി ശിവശങ്കരപ്പിള്ള",
+    "category": "novels",
+    "description": "ആലപ്പുഴയിലെ തോട്ടികളുടെ ജീവിതദുരിതങ്ങളും അതിജീവനത്തിനായുള്ള ചെറുത്തുനിൽപ്പുകളും.",
+    "color": "#1d4ed8",
+    "year": "1947"
+  },
+  {
+    "id": "BK-011",
+    "barcode": "978817208201",
+    "title": "ബാല്യകാലസഖി",
+    "author": "വൈക്കം മുഹമ്മദ് ബഷീർ",
+    "category": "stories",
+    "description": "മജീദിന്റെയും സുഹ്റയുടെയും വിരഹവും വേദനയും നിറഞ്ഞ മലയാളത്തിലെ ഏറ്റവും പ്രിയപ്പെട്ട പ്രണയകഥ.",
+    "color": "#065f46",
+    "year": "1944"
+  },
+  {
+    "id": "BK-012",
+    "barcode": "978817208202",
+    "title": "നീലവെളിച്ചം",
+    "author": "വൈക്കം മുഹമ്മദ് ബഷീർ",
+    "category": "stories",
+    "description": "ഒരു എഴുത്തുകാരനും ഭാർഗ്ഗവി എന്ന ബാധയും തമ്മിലുള്ള അസാധാരണമായ ആത്മബന്ധത്തിന്റെ കഥ.",
+    "color": "#047857",
+    "year": "1954"
+  },
+  {
+    "id": "BK-013",
+    "barcode": "978817208203",
+    "title": "മതിലുകൾ (Mathilukal)",
+    "author": "വൈക്കം മുഹമ്മദ് ബഷീർ",
+    "category": "stories",
+    "description": "ജയിൽ മതിലിനപ്പുറമുള്ള നാരായണി എന്ന പെൺകുട്ടിയോടുള്ള പ്രണയവും ഏകാന്തതയും.",
+    "color": "#059669",
+    "year": "1965"
+  },
+  {
+    "id": "BK-014",
+    "barcode": "978817208204",
+    "title": "പാത്തുമ്മായുടെ ആട്",
+    "author": "വൈക്കം മുഹമ്മദ് ബഷീർ",
+    "category": "stories",
+    "description": "ബഷീറിന്റെ കുടുംബാംഗങ്ങളുടെയും പാത്തുമ്മയുടെ കുസൃതിക്കാരനായ ആടിന്റെയും ചിരിയുണർത്തുന്ന കഥകൾ.",
+    "color": "#10b981",
+    "year": "1959"
+  },
+  {
+    "id": "BK-015",
+    "barcode": "978817208205",
+    "title": "ശബ്ദങ്ങൾ (Shabdangal)",
+    "author": "വൈക്കം മുഹമ്മദ് ബഷീർ",
+    "category": "stories",
+    "description": "യുദ്ധവും ദാരിദ്ര്യവും മനുഷ്യനെ അന്യവൽക്കരിക്കുന്നതിന്റെ തീക്ഷ്ണമായ ആഖ്യാനം.",
+    "color": "#064e3b",
+    "year": "1947"
+  },
+  {
+    "id": "BK-016",
+    "barcode": "978817208206",
+    "title": "പൂവമ്പഴം (Poovampazham)",
+    "author": "വൈക്കം മുഹമ്മദ് ബഷീർ",
+    "category": "stories",
+    "description": "അബ്ദുൽ ഖാദറും ജമീല ബീവിയും തമ്മിലുള്ള ദാമ്പത്യവും പൂവമ്പഴം നൽകിയ തിരിച്ചറിവുകളും.",
+    "color": "#047857",
+    "year": "1953"
+  },
+  {
+    "id": "BK-017",
+    "barcode": "978817208207",
+    "title": "ബിരിയാണി (Biriyani)",
+    "author": "സന്തോഷ് ഏച്ചിക്കാനം",
+    "category": "stories",
+    "description": "ആഡംബര വിവാഹത്തിൽ പാഴായിപ്പോകുന്ന ബിരിയാണിയും വിശപ്പിന്റെ നീറ്റലും പറയുന്ന കഥ.",
+    "color": "#065f46",
+    "year": "2016"
+  },
+  {
+    "id": "BK-018",
+    "barcode": "978817208208",
+    "title": "മാന്ത്രികപ്പൂച്ച (Manthrikappoocha)",
+    "author": "വൈക്കം മുഹമ്മദ് ബഷീർ",
+    "category": "stories",
+    "description": "ബഷീറിയൻ നർമ്മവും ദാർശനികതയും നിറഞ്ഞ അപൂർവ്വമായ കൊച്ചുകഥകൾ.",
+    "color": "#059669",
+    "year": "1968"
+  },
+  {
+    "id": "BK-019",
+    "barcode": "978817208301",
+    "title": "Cosmos",
+    "author": "Carl Sagan",
+    "category": "science",
+    "description": "The story of cosmic evolution, science and civilization across billions of years.",
+    "color": "#581c87",
+    "year": "1980"
+  },
+  {
+    "id": "BK-020",
+    "barcode": "978817208302",
+    "title": "A Brief History of Time",
+    "author": "Stephen Hawking",
+    "category": "science",
+    "description": "From the Big Bang to black holes, exploring the fundamental questions of the universe.",
+    "color": "#6b21a8",
+    "year": "1988"
+  },
+  {
+    "id": "BK-021",
+    "barcode": "978817208303",
+    "title": "Clean Code",
+    "author": "Robert C. Martin",
+    "category": "science",
+    "description": "A handbook of agile software craftsmanship and writing elegant maintainable code.",
+    "color": "#4c1d95",
+    "year": "2008"
+  },
+  {
+    "id": "BK-022",
+    "barcode": "978817208304",
+    "title": "The Selfish Gene",
+    "author": "Richard Dawkins",
+    "category": "science",
+    "description": "A classic work on evolutionary biology from the gene-centered perspective.",
+    "color": "#7c3aed",
+    "year": "1976"
+  },
+  {
+    "id": "BK-023",
+    "barcode": "978817208305",
+    "title": "Design Patterns",
+    "author": "Erich Gamma & Gang of Four",
+    "category": "science",
+    "description": "Elements of reusable object-oriented software architecture and engineering.",
+    "color": "#581c87",
+    "year": "1994"
+  },
+  {
+    "id": "BK-024",
+    "barcode": "978817208306",
+    "title": "Artificial Intelligence",
+    "author": "Stuart Russell & Peter Norvig",
+    "category": "science",
+    "description": "The definitive modern approach to machine learning, robotics and neural systems.",
+    "color": "#6b21a8",
+    "year": "2020"
+  },
+  {
+    "id": "BK-025",
+    "barcode": "978817208307",
+    "title": "The Elegant Universe",
+    "author": "Brian Greene",
+    "category": "science",
+    "description": "Superstrings, hidden dimensions, and the quest for the ultimate theory of everything.",
+    "color": "#3b0764",
+    "year": "1999"
+  },
+  {
+    "id": "BK-026",
+    "barcode": "978817208401",
+    "title": "Sapiens: A Brief History",
+    "author": "Yuval Noah Harari",
+    "category": "history",
+    "description": "How an insignificant ape became the ruler of planet Earth.",
+    "color": "#78350f",
+    "year": "2014"
+  },
+  {
+    "id": "BK-027",
+    "barcode": "978817208402",
+    "title": "കേരള ചരിത്രം (History of Kerala)",
+    "author": "എ. ശ്രീധരമേനോൻ",
+    "category": "history",
+    "description": "കേരളത്തിന്റെ രാഷ്ട്രീയ, സാമൂഹിക, സാംസ്കാരിക വികാസങ്ങളുടെ ആധികാരിക ചരിത്രം.",
+    "color": "#92400e",
+    "year": "1967"
+  },
+  {
+    "id": "BK-028",
+    "barcode": "978817208403",
+    "title": "The Discovery of India",
+    "author": "Jawaharlal Nehru",
+    "category": "history",
+    "description": "A sweeping journey through Indian culture, philosophy and freedom struggle.",
+    "color": "#b45309",
+    "year": "1946"
+  },
+  {
+    "id": "BK-029",
+    "barcode": "978817208404",
+    "title": "ഗുരുദേവന്റെ ചരിത്രം",
+    "author": "എം. കെ. സാനു",
+    "category": "history",
+    "description": "ശ്രീനാരായണ ഗുരുവിന്റെ ജീവിതവും വിപ്ലവകരമായ സാമൂഹിക പരിഷ്കാരങ്ങളും.",
+    "color": "#854d0e",
+    "year": "1986"
+  },
+  {
+    "id": "BK-030",
+    "barcode": "978817208405",
+    "title": "Guns, Germs, and Steel",
+    "author": "Jared Diamond",
+    "category": "history",
+    "description": "The fates of human societies through geographic and environmental factors.",
+    "color": "#78350f",
+    "year": "1997"
+  },
+  {
+    "id": "BK-031",
+    "barcode": "978817208501",
+    "title": "തത്ത്വമസി (Thathvamasi)",
+    "author": "സുകുമാർ അഴീക്കോട്",
+    "category": "literature",
+    "description": "ഭാരതീയ ഉപനിഷദ് തത്ത്വചിന്തയെ സാധാരണക്കാർക്കായി ലളിതമായി വിശദീകരിക്കുന്ന ക്ലാസിക്.",
+    "color": "#701a75",
+    "year": "1984"
+  },
+  {
+    "id": "BK-032",
+    "barcode": "978817208502",
+    "title": "Crime and Punishment",
+    "author": "Fyodor Dostoevsky",
+    "category": "literature",
+    "description": "A profound psychological exploration of guilt, conscience, and moral redemption.",
+    "color": "#86198f",
+    "year": "1866"
+  },
+  {
+    "id": "BK-033",
+    "barcode": "978817208503",
+    "title": "The Republic",
+    "author": "Plato",
+    "category": "literature",
+    "description": "Socratic dialogue concerning justice, the order of the ideal city-state, and virtue.",
+    "color": "#a21caf",
+    "year": "-375"
+  },
+  {
+    "id": "BK-034",
+    "barcode": "978817208504",
+    "title": "One Hundred Years of Solitude",
+    "author": "Gabriel Garcia Marquez",
+    "category": "literature",
+    "description": "The epic tale of seven generations of the Buendia family in the mythical town of Macondo.",
+    "color": "#701a75",
+    "year": "1967"
+  },
+  {
+    "id": "BK-035",
+    "barcode": "978817208505",
+    "title": "സ്വാതന്ത്ര്യത്തിന്റെ തത്ത്വചിന്ത",
+    "author": "കെ. വേണു",
+    "category": "literature",
+    "description": "വ്യക്തിസ്വാതന്ത്ര്യത്തെയും ജനാധിപത്യ ബോധത്തെയും കുറിച്ചുള്ള ഗഹനമായ പഠനം.",
+    "color": "#86198f",
+    "year": "1992"
+  },
+  {
+    "id": "BK-036",
+    "barcode": "978817208601",
+    "title": "Computer Networks",
+    "author": "Andrew S. Tanenbaum",
+    "category": "education",
+    "description": "The definitive textbook on modern networking principles, protocols and physical layers.",
+    "color": "#155e75",
+    "year": "2010"
+  },
+  {
+    "id": "BK-037",
+    "barcode": "978817208602",
+    "title": "Operating System Concepts",
+    "author": "Silberschatz, Galvin & Gagne",
+    "category": "education",
+    "description": "The dinosaur book: comprehensive study of processes, threads, memory, and file systems.",
+    "color": "#0e7490",
+    "year": "2018"
+  },
+  {
+    "id": "BK-038",
+    "barcode": "978817208603",
+    "title": "Introduction to Algorithms",
+    "author": "CLRS (Cormen, Leiserson, Rivest, Stein)",
+    "category": "education",
+    "description": "The international standard algorithms bible for computer science and engineering.",
+    "color": "#0891b2",
+    "year": "2009"
+  },
+  {
+    "id": "BK-039",
+    "barcode": "978817208604",
+    "title": "മത്സരപരീക്ഷാ സഹായി",
+    "author": "മാതൃഭൂമി ഇയർബുക്ക്",
+    "category": "education",
+    "description": "പൊതുവിജ്ഞാനവും സമകാലിക സംഭവങ്ങളും ഉൾക്കൊള്ളുന്ന ആധികാരിക പഠന സഹായി.",
+    "color": "#155e75",
+    "year": "2024"
+  },
+  {
+    "id": "BK-040",
+    "barcode": "978817208701",
+    "title": "കരുണ (Karuna)",
+    "author": "കുമാരനാശാൻ",
+    "category": "poetry",
+    "description": "വാസവദത്തയുടെയും ഉപഗുപ്തന്റെയും കഥ പറയുന്ന അനശ്വരമായ ഖണ്ഡകാവ്യം.",
+    "color": "#831843",
+    "year": "1923"
+  },
+  {
+    "id": "BK-041",
+    "barcode": "978817208702",
+    "title": "ചിന്താവിഷ്ടയായ സീത",
+    "author": "കുമാരനാശാൻ",
+    "category": "poetry",
+    "description": "ശ്രീരാമന്റെ അന്യായമായ ത്യാഗത്തിൽ വിരഹവേദനയോടെ നീതി ചോദിക്കുന്ന സീതയുടെ ആത്മവിചാരം.",
+    "color": "#9d174d",
+    "year": "1919"
+  },
+  {
+    "id": "BK-042",
+    "barcode": "978817208703",
+    "title": "മാഗ്ദലന മറിയം",
+    "author": "വള്ളത്തോൾ നാരായണമേനോൻ",
+    "category": "poetry",
+    "description": "യേശുക്രിസ്തുവിന്റെ കാരുണ്യത്താൽ വിശുദ്ധി നേടിയ മറിയത്തിന്റെ അനുതാപ കാവ്യം.",
+    "color": "#be185d",
+    "year": "1921"
+  },
+  {
+    "id": "BK-043",
+    "barcode": "978817208704",
+    "title": "പൂതപ്പാട്ട് (Poothappattu)",
+    "author": "ഇടശ്ശേരി ഗോവിന്ദൻ നായർ",
+    "category": "poetry",
+    "description": "ഉണ്ണിയെ മോഷ്ടിച്ച പൂതവും മാതൃസ്നേഹത്തിന്റെ അപാര ശക്തിയും പറയുന്ന നാടൻ കാവ്യം.",
+    "color": "#831843",
+    "year": "1953"
+  },
+  {
+    "id": "BK-044",
+    "barcode": "978817208705",
+    "title": "കുരുക്ഷേത്രം (Kurukshethram)",
+    "author": "അയ്യപ്പപ്പണിക്കർ",
+    "category": "poetry",
+    "description": "മലയാള ആധുനിക കവിതയിലെ നവഭാവുകത്വത്തിന് തുടക്കം കുറിച്ച ഇതിഹാസ കൃതി.",
+    "color": "#9d174d",
+    "year": "1960"
+  },
+  {
+    "id": "BK-045",
+    "barcode": "978817208801",
+    "title": "എന്റെ കഥ (My Story)",
+    "author": "മാധവിക്കുട്ടി (Kamala Surayya)",
+    "category": "biography",
+    "description": "കമലാ സുരയ്യയുടെ സത്യസന്ധവും വിപ്ലവകരവുമായ ലോകപ്രശസ്ത ആത്മകഥ.",
+    "color": "#365314",
+    "year": "1973"
+  },
+  {
+    "id": "BK-046",
+    "barcode": "978817208802",
+    "title": "Wings of Fire",
+    "author": "Dr. A. P. J. Abdul Kalam",
+    "category": "biography",
+    "description": "An inspiring autobiography of India's Missile Man and former President.",
+    "color": "#3f6212",
+    "year": "1999"
+  },
+  {
+    "id": "BK-047",
+    "barcode": "978817208803",
+    "title": "സ്മൃതിദർപ്പണം",
+    "author": "തകഴി ശിവശങ്കരപ്പിള്ള",
+    "category": "biography",
+    "description": "തകഴിയുടെ ജീവിതാநுഭവങ്ങളും സാഹിത്യ സൗഹൃദങ്ങളും സ്മരണകളും.",
+    "color": "#4d7c0f",
+    "year": "1980"
+  },
+  {
+    "id": "BK-048",
+    "barcode": "978817208804",
+    "title": "Steve Jobs",
+    "author": "Walter Isaacson",
+    "category": "biography",
+    "description": "The exclusive biography of the creative entrepreneur who revolutionized multiple industries.",
+    "color": "#365314",
+    "year": "2011"
+  },
+  {
+    "id": "BK-049",
+    "barcode": "978817208805",
+    "title": "കഥയില്ലാത്തവന്റെ കഥ",
+    "author": "എം. എൻ. വിജയൻ",
+    "category": "biography",
+    "description": "സാമൂഹിക വിമർശകനും ചിന്തകനുമായ എം. എൻ. വിജയന്റെ ജീവിത രേഖകൾ.",
+    "color": "#3f6212",
+    "year": "2004"
+  }
+]

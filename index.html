@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D സ്മാർട്ട് ലൈബ്രറി (Smart 3D Library)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Three.js and GSAP via unpkg / CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <!-- 3D Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen" class="loading-screen">
+    <div class="loader-content">
+      <div class="book-loader">
+        <div class="page"></div>
+        <div class="page"></div>
+        <div class="page"></div>
+      </div>
+      <h2>3D ലൈബ്രറി ലോഡ് ചെയ്യുന്നു...</h2>
+      <p id="loading-status">ബ്ലെൻഡർ മോഡലും ഷെൽഫുകളും ഒരുക്കുന്നു...</p>
+      <div class="progress-bar-bg">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Top Bar -->
+  <header class="top-bar">
+    <div class="brand">
+      <div class="brand-icon">
+        <i data-lucide="library"></i>
+      </div>
+      <div class="brand-text">
+        <h1>3D സ്മാർട്ട് ലൈബ്രറി</h1>
+        <span class="subtext">Interactive 3D Library Management</span>
+      </div>
+    </div>
+
+    <!-- Live Search Container -->
+    <div class="search-section">
+      <div class="search-input-wrapper">
+        <i data-lucide="search" class="search-icon"></i>
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="ബുക്കിന്റെ പേര്, ഓതർ, ബാർകോഡ് നമ്പർ ടൈപ്പ് ചെയ്യുക..." 
+          autocomplete="off"
+        />
+        <button id="clear-search-btn" class="clear-btn" title="ക്ലിയർ ചെയ്യുക" style="display: none;">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <!-- Live Search Results Dropdown -->
+      <div id="search-dropdown" class="search-dropdown" style="display: none;">
+        <div class="dropdown-header">
+          <span id="results-count">0 ബുക്കുകൾ കണ്ടെത്തി</span>
+          <span class="hint">ക്ലിക്ക് ചെയ്താൽ ക്യാമറ ആ ബുക്കിലേക്ക് പറക്കും</span>
+        </div>
+        <div id="search-results-list" class="results-list"></div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="header-actions">
+      <button id="entrance-cam-btn" class="action-btn" title="വാതിലിന്റെ അടുത്തേക്ക് ക്യാമറ മാറ്റുക">
+        <i data-lucide="door-open"></i>
+        <span>വാതിൽ (Entrance)</span>
+      </button>
+
+      <button id="overview-cam-btn" class="action-btn" title="മുകളിൽ നിന്നുള്ള വ്യൂ">
+        <i data-lucide="compass"></i>
+        <span>Overview</span>
+      </button>
+
+      <button id="shelf-mgr-btn" class="action-btn" title="ഷെൽഫുകളുടെ കാറ്റഗറി നിയന്ത്രിക്കുക">
+        <i data-lucide="layers"></i>
+        <span>ഷെൽഫ് & കാറ്റഗറികൾ</span>
+      </button>
+
+      <button id="admin-panel-btn" class="action-btn primary" title="പുതിയ ബുക്ക് ആഡ് ചെയ്യുക">
+        <i data-lucide="plus-circle"></i>
+        <span>ബുക്ക് ആഡ് ചെയ്യുക</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Category Pills Bar -->
+  <nav class="category-bar">
+    <div class="category-scroll" id="category-pills">
+      <button class="pill active" data-category="all">
+        <i data-lucide="layers"></i>
+        <span>എല്ലാം (All)</span>
+      </button>
+      <!-- Injected by JavaScript -->
+    </div>
+  </nav>
+
+  <!-- Current Navigation Status Banner (shown during camera flight) -->
+  <div id="nav-banner" class="nav-banner" style="display: none;">
+    <div class="nav-spinner"></div>
+    <div class="nav-info">
+      <span class="nav-title" id="nav-target-title">യാത്ര ചെയ്യുന്നു...</span>
+      <span class="nav-coords" id="nav-target-coords">ഷെൽഫിലേക്ക് ക്യാമറ നീങ്ങുന്നു</span>
+    </div>
+  </div>
+
+  <!-- Focused Book Floating Card (appears when camera arrives and book floats) -->
+  <div id="book-inspect-card" class="book-inspect-card" style="display: none;">
+    <div class="inspect-header">
+      <span class="category-tag" id="inspect-category">നോവലുകൾ</span>
+      <button id="close-inspect-btn" class="close-card-btn" title="തിരികെ ഷെൽഫിൽ വെക്കുക">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <div class="inspect-body">
+      <div class="book-cover-badge" id="inspect-cover-badge">
+        <i data-lucide="book-open"></i>
+      </div>
+      <div class="inspect-details">
+        <h2 id="inspect-title">ബുക്കിന്റെ പേര്</h2>
+        <div class="author-row">
+          <i data-lucide="user"></i>
+          <span id="inspect-author">എഴുത്തുകാരൻ</span>
+        </div>
+        <div class="barcode-row">
+          <i data-lucide="barcode"></i>
+          <span class="barcode-num" id="inspect-barcode">9788172081234</span>
+        </div>
+        <p class="inspect-desc" id="inspect-desc">വിവരണം...</p>
+        <div class="location-badge">
+          <i data-lucide="map-pin"></i>
+          <span id="inspect-location">Row 1 • Shelf 2 • Rack 3</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="inspect-actions">
+      <button id="put-back-btn" class="inspect-btn secondary">
+        <i data-lucide="arrow-down-to-dot"></i>
+        <span>തിരികെ വെക്കുക</span>
+      </button>
+      <button id="move-book-btn" class="inspect-btn secondary" title="ഷെൽഫിലെ സ്ഥാനം മാറ്റുക">
+        <i data-lucide="move"></i>
+        <span>സ്ഥാനം മാറ്റുക</span>
+      </button>
+      <button id="issue-btn" class="inspect-btn primary">
+        <i data-lucide="bookmark-check"></i>
+        <span>ഇഷ്യൂ ചെയ്യുക</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Admin Modal / Drawer -->
+  <div id="admin-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon">
+            <i data-lucide="plus-circle"></i>
+          </div>
+          <div>
+            <h2>ഷെൽഫിലേക്ക് പുതിയ ബുക്ക് ചേർക്കുക</h2>
+            <p>വിവരങ്ങൾ നൽകിയാൽ 3D ഷെൽഫിൽ തനിയെ ബുക്ക് രൂപപ്പെടും</p>
+          </div>
+        </div>
+        <button id="close-modal-btn" class="close-btn">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="tab-btn active" data-tab="form">
+          <i data-lucide="file-plus"></i>
+          <span>പുതിയ ബുക്ക്</span>
+        </button>
+        <button class="tab-btn" data-tab="manage">
+          <i data-lucide="book-copy"></i>
+          <span>ലൈബ്രറി ബുക്കുകൾ (<span id="total-books-count">0</span>)</span>
+        </button>
+        <button class="tab-btn" data-tab="shelves">
+          <i data-lucide="layers"></i>
+          <span>ഷെൽഫുകളും കാറ്റഗറികളും</span>
+        </button>
+      </div>
+
+      <!-- Add Book Form Tab -->
+      <form id="add-book-form" class="modal-form tab-content active">
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="book-title">ബുക്കിന്റെ പേര് (Book Title) *</label>
+            <input type="text" id="book-title" required placeholder="ഉദാ: ആടുജീവിതം">
+          </div>
+          <div class="form-group">
+            <label for="book-author">എഴുതിയ ആളുടെ പേര് (Author) *</label>
+            <input type="text" id="book-author" required placeholder="ഉദാ: ബെന്യാമിൻ">
+          </div>
+        </div>
+
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="book-barcode">ബാർകോഡ് നമ്പർ (Barcode) *</label>
+            <input type="text" id="book-barcode" required placeholder="ഉദാ: 9788172081299">
+          </div>
+          <div class="form-group">
+            <label for="book-category">കാറ്റഗറി (Category / Shelf Section) *</label>
+            <select id="book-category" required>
+              <!-- Populated by JS -->
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="book-color">ബുക്കിന്റെ നിറം (Spine Color)</label>
+            <div class="color-picker-row">
+              <input type="color" id="book-color" value="#1e3a8a">
+              <span class="color-hex" id="color-hex">#1e3a8a</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="book-year">പ്രസിദ്ധീകരിച്ച വർഷം (Year)</label>
+            <input type="text" id="book-year" placeholder="ഉദാ: 2024">
+          </div>
+        </div>
+
+        <div class="custom-placement-section">
+          <div class="custom-placement-header">
+            <i data-lucide="sliders"></i>
+            <span>ഷെൽഫിലെ സ്ഥാനം കസ്റ്റമൈസ് ചെയ്യുക (Customize Shelf Placement)</span>
+          </div>
+          <div class="form-row three-col">
+            <div class="form-group">
+              <label for="book-rack">റാക്ക് ലെവൽ (Rack Level)</label>
+              <select id="book-rack">
+                <option value="auto">Auto (നടുവിലെ റാക്ക് 3 ആദ്യം)</option>
+                <option value="3">റാക്ക് 3 - നടുവിലെ റാക്ക് (Middle Level 3)</option>
+                <option value="2">റാക്ക് 2 - താഴത്തെ നടുവിലെ റാക്ക് (Lower 2)</option>
+                <option value="1">റാക്ക് 1 - ഏറ്റവും താഴെ (Bottom 1)</option>
+                <option value="4">റാക്ക് 4 - മുകളിലെ നടുവിലെ റാക്ക് (Upper 4)</option>
+                <option value="5">റാക്ക് 5 - ഏറ്റവും മുകളിൽ (Top 5)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="book-bay">അറ / ബേ (Bay Section)</label>
+              <select id="book-bay">
+                <option value="auto">Auto (അടുത്ത ഒഴിഞ്ഞ ഭാഗം)</option>
+                <option value="1">ഇടതുഭാഗം (Bay 1 - Left)</option>
+                <option value="2">വലതുഭാഗം (Bay 2 - Right)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="book-slot">സ്ലോട്ട് നമ്പർ (Slot 1-15)</label>
+              <select id="book-slot">
+                <option value="auto">Auto (അടുത്ത ഒഴിഞ്ഞ സ്ലോട്ട്)</option>
+                <option value="1">Slot 1</option>
+                <option value="2">Slot 2</option>
+                <option value="3">Slot 3</option>
+                <option value="4">Slot 4</option>
+                <option value="5">Slot 5</option>
+                <option value="6">Slot 6</option>
+                <option value="7">Slot 7</option>
+                <option value="8">Slot 8</option>
+                <option value="9">Slot 9</option>
+                <option value="10">Slot 10</option>
+                <option value="11">Slot 11</option>
+                <option value="12">Slot 12</option>
+                <option value="13">Slot 13</option>
+                <option value="14">Slot 14</option>
+                <option value="15">Slot 15</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="book-desc">ചെറിയ വിവരണം (Brief Description)</label>
+          <textarea id="book-desc" rows="2" placeholder="ബുക്കിന്റെ ഉള്ളടക്കത്തെക്കുറിച്ചുള്ള ലഘുവിവരണം..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancel-add-btn" class="btn secondary">റദ്ദാക്കുക</button>
+          <button type="submit" class="btn primary">
+            <i data-lucide="sparkles"></i>
+            <span>3D ഷെൽഫിൽ ബുക്ക് നിർമ്മിക്കുക</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Manage Books Tab -->
+      <div id="manage-books-tab" class="tab-content manage-tab" style="display: none;">
+        <div class="manage-table-wrapper">
+          <table class="manage-table">
+            <thead>
+              <tr>
+                <th>ബുക്ക്</th>
+                <th>ഓതർ</th>
+                <th>കാറ്റഗറി</th>
+                <th>ബാർകോഡ്</th>
+                <th>ലൊക്കേഷൻ</th>
+                <th>ആക്ഷൻ</th>
+              </tr>
+            </thead>
+            <tbody id="manage-books-tbody">
+              <!-- Injected by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Shelves & Categories Tab -->
+      <div id="shelves-tab" class="tab-content shelves-tab" style="display: none;">
+        <div class="shelves-tab-header">
+          <div class="shelves-stats">
+            <span class="stat-badge"><i data-lucide="layers"></i> <strong id="total-categories-count">8</strong> കാറ്റഗറികൾ</span>
+            <span class="stat-badge"><i data-lucide="library"></i> <strong>40</strong> ഷെൽഫുകൾ (17 റോകൾ)</span>
+          </div>
+          <button type="button" id="open-add-cat-btn" class="btn primary small-btn">
+            <i data-lucide="folder-plus"></i>
+            <span>+ പുതിയ കാറ്റഗറി ഉണ്ടാക്കുക</span>
+          </button>
+        </div>
+
+        <div class="shelves-filter-bar">
+          <button type="button" class="shelf-wing-btn active" data-wing="all">എല്ലാ ഷെൽഫുകളും (All)</button>
+          <button type="button" class="shelf-wing-btn" data-wing="left">ഇടതുഭാഗം (Left Wing)</button>
+          <button type="button" class="shelf-wing-btn" data-wing="right">വലതുഭാഗം (Right Wing)</button>
+        </div>
+
+        <div class="manage-table-wrapper">
+          <table class="manage-table shelves-table">
+            <thead>
+              <tr>
+                <th>ഷെൽഫ് റോ (Row)</th>
+                <th>നിലവിലെ കാറ്റഗറി</th>
+                <th>കാറ്റഗറി മാറ്റുക (Assign Category)</th>
+                <th>ബുക്കുകൾ</th>
+                <th>ആക്ഷൻ</th>
+              </tr>
+            </thead>
+            <tbody id="shelves-tbody">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="categories-list-section">
+          <h3>നിലവിലെ കാറ്റഗറികൾ (Current Categories)</h3>
+          <div id="categories-summary-list" class="cat-summary-pills">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Location Modal -->
+  <div id="edit-location-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog small-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon">
+            <i data-lucide="map-pin"></i>
+          </div>
+          <div>
+            <h2>ഷെൽഫിലെ സ്ഥാനം മാറ്റുക</h2>
+            <p id="edit-modal-book-title">ബുക്കിന്റെ പുതിയ റാക്കും സ്ലോട്ടും തിരഞ്ഞെടുക്കുക</p>
+          </div>
+        </div>
+        <button id="close-edit-modal-btn" class="close-btn">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="edit-location-form" class="modal-form">
+        <input type="hidden" id="edit-book-id">
+        <div class="form-group">
+          <label for="edit-book-rack">റാക്ക് ലെവൽ (Rack Level) *</label>
+          <select id="edit-book-rack" required>
+            <option value="3">റാക്ക് 3 - നടുവിലെ റാക്ക് (Middle Level 3) [Recommended]</option>
+            <option value="2">റാക്ക് 2 - താഴത്തെ നടുവിലെ റാക്ക് (Lower 2)</option>
+            <option value="1">റാക്ക് 1 - ഏറ്റവും താഴെ (Bottom 1)</option>
+            <option value="4">റാക്ക് 4 - മുകളിലെ നടുവിലെ റാക്ക് (Upper 4)</option>
+            <option value="5">റാക്ക് 5 - ഏറ്റവും മുകളിൽ (Top 5)</option>
+          </select>
+        </div>
+
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="edit-book-bay">അറ / ബേ (Bay Section) *</label>
+            <select id="edit-book-bay" required>
+              <option value="1">ഇടതുഭാഗം (Bay 1 - Left)</option>
+              <option value="2">വലതുഭാഗം (Bay 2 - Right)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-book-slot">സ്ലോട്ട് നമ്പർ (Slot 1-15) *</label>
+            <select id="edit-book-slot" required>
+              <option value="1">Slot 1</option>
+              <option value="2">Slot 2</option>
+              <option value="3">Slot 3</option>
+              <option value="4">Slot 4</option>
+              <option value="5">Slot 5</option>
+              <option value="6">Slot 6</option>
+              <option value="7">Slot 7</option>
+              <option value="8">Slot 8</option>
+              <option value="9">Slot 9</option>
+              <option value="10">Slot 10</option>
+              <option value="11">Slot 11</option>
+              <option value="12">Slot 12</option>
+              <option value="13">Slot 13</option>
+              <option value="14">Slot 14</option>
+              <option value="15">Slot 15</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancel-edit-btn" class="btn secondary">റദ്ദാക്കുക</button>
+          <button type="submit" class="btn primary">
+            <i data-lucide="check"></i>
+            <span>പുതിയ സ്ഥാനത്തേക്ക് മാറ്റുക</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add New Category Modal -->
+  <div id="add-category-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog small-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">
+            <i data-lucide="folder-plus"></i>
+          </div>
+          <div>
+            <h2>പുതിയ കാറ്റഗറി ഉണ്ടാക്കുക</h2>
+            <p>കാറ്റഗറി ഉണ്ടാക്കി ഷെൽഫുകളിലേക്ക് അസൈൻ ചെയ്യാം</p>
+          </div>
+        </div>
+        <button id="close-add-cat-modal-btn" class="close-btn">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <form id="add-category-form" class="modal-form">
+        <div class="form-group">
+          <label for="cat-name">കാറ്റഗറിയുടെ പേര് (Category Name) *</label>
+          <input type="text" id="cat-name" required placeholder="ഉദാ: കുട്ടികളുടെ സാഹിത്യം (Kids Stories)">
+        </div>
+
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="cat-id">ഐഡി / കോഡ് (ID / Slug) *</label>
+            <input type="text" id="cat-id" required placeholder="ഉദാ: kids_stories">
+          </div>
+          <div class="form-group">
+            <label for="cat-color">കാറ്റഗറി നിറം (Color Theme)</label>
+            <div class="color-picker-row">
+              <input type="color" id="cat-color" value="#06b6d4">
+              <span class="color-hex" id="cat-color-hex">#06b6d4</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="cat-side">ലൈബ്രറി വശം (Wing / Side) *</label>
+            <select id="cat-side" required>
+              <option value="left">ഇടതുഭാഗം (Left Wing)</option>
+              <option value="right">വലതുഭാഗം (Right Wing)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="cat-assign-row">ഏത് ഷെൽഫ് റോ നൽകണം (Assign Row) *</label>
+            <select id="cat-assign-row" required>
+              <!-- Populated dynamically based on chosen side -->
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancel-add-cat-btn" class="btn secondary">റദ്ദാക്കുക</button>
+          <button type="submit" class="btn primary">
+            <i data-lucide="check"></i>
+            <span>കാറ്റഗറി ഉണ്ടാക്കി ഷെൽഫിൽ ചേർക്കുക</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Shelf Inspect Card (Click shelf directly in 3D) -->
+  <div id="shelf-inspect-card" class="shelf-inspect-card" style="display: none;">
+    <div class="shelf-card-header">
+      <div class="shelf-card-badge">
+        <i data-lucide="library"></i>
+      </div>
+      <div>
+        <h3 id="shelf-inspect-title">ഇടതുഭാഗം - Row 1</h3>
+        <p id="shelf-inspect-subtitle">3 ഷെൽഫുകൾ</p>
+      </div>
+      <button id="close-shelf-inspect-btn" class="close-card-btn">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+
+    <div class="shelf-card-body">
+      <div class="shelf-cat-row">
+        <span class="shelf-cat-label">നിലവിലെ കാറ്റഗറി:</span>
+        <span id="shelf-current-cat-badge" class="cat-pill-badge">നോവലുകൾ</span>
+      </div>
+
+      <div class="form-group" style="margin-top: 10px;">
+        <label for="shelf-quick-cat-select">കാറ്റഗറി മാറ്റുക (Change Category):</label>
+        <select id="shelf-quick-cat-select">
+          <!-- Populated by JS -->
+        </select>
+      </div>
+
+      <div class="shelf-books-stats">
+        <span>ഈ ഷെൽഫിലെ പുസ്തകങ്ങൾ: <strong id="shelf-books-count">0</strong></span>
+      </div>
+    </div>
+
+    <div class="shelf-card-actions">
+      <button id="shelf-save-cat-btn" class="btn primary small-btn">
+        <i data-lucide="save"></i>
+        <span>സേവ് ചെയ്യുക</span>
+      </button>
+      <button id="shelf-add-book-btn" class="btn secondary small-btn">
+        <i data-lucide="plus"></i>
+        <span>ബുക്ക് ചേർക്കുക</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Helper Bar -->
+  <div class="bottom-helper">
+    <div class="helper-pill">
+      <i data-lucide="mouse-pointer"></i>
+      <span>മൗസ് കൊണ്ട് ലൈബ്രറി ചുറ്റി കാണാം (Orbit) • ബുക്കിൽ ക്ലിക്ക് ചെയ്താൽ അത് മുന്നിൽ വരും</span>
+    </div>
+  </div>
+
+  <!-- Main JavaScript Application -->
+  <script src="app.js" defer></script>
+</body>
+</html>
