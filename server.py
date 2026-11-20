@@ -2,9 +2,10 @@ import http.server
 import socketserver
 import json
 import os
+import sys
 import urllib.parse
 
-PORT = 5050
+PORT = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", 5051))
 DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 BOOKS_FILE = os.path.join(DIRECTORY, "books.json")
 LAYOUT_FILE = os.path.join(DIRECTORY, "library_layout.json")

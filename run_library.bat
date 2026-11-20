@@ -24,15 +24,15 @@ if not exist "%BROWSER_EXE%" set "BROWSER_EXE=C:\Program Files\Microsoft\Edge\Ap
 
 set "BROWSER_FLAGS=--user-data-dir="%TEMP%\smart_library_profile" --ignore-gpu-blocklist --enable-webgl --disable-gpu-watchdog"
 
-echo Checking server status on port 5050...
-powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:5050/api/books' -TimeoutSec 2 -UseBasicParsing; exit 0 } catch { exit 1 }"
+echo Checking server status on port 5051...
+powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:5051/api/books' -TimeoutSec 2 -UseBasicParsing; exit 0 } catch { exit 1 }"
 if %ERRORLEVEL% EQU 0 (
-    echo Server is ALREADY active on port 5050!
-    echo Opening browser with GPU-free CPU flags at http://localhost:5050 ...
+    echo Server is ALREADY active on port 5051!
+    echo Opening browser with GPU-free CPU flags at http://localhost:5051 ...
     if exist "%BROWSER_EXE%" (
-        start "" "%BROWSER_EXE%" %BROWSER_FLAGS% http://localhost:5050
+        start "" "%BROWSER_EXE%" %BROWSER_FLAGS% http://localhost:5051
     ) else (
-        start http://localhost:5050
+        start http://localhost:5051
     )
     goto running
 )
@@ -41,20 +41,20 @@ echo Starting Python Multi-threaded Server in background...
 start "3D Smart Library Server" /min "%PYTHON_EXE%" server.py
 
 echo Waiting for server to initialize...
-powershell -Command "for ($i=0; $i -lt 12; $i++) { try { $r = Invoke-WebRequest -Uri 'http://localhost:5050/api/books' -TimeoutSec 1 -UseBasicParsing; exit 0 } catch { Start-Sleep -Milliseconds 500 } }; exit 1"
+powershell -Command "for ($i=0; $i -lt 12; $i++) { try { $r = Invoke-WebRequest -Uri 'http://localhost:5051/api/books' -TimeoutSec 1 -UseBasicParsing; exit 0 } catch { Start-Sleep -Milliseconds 500 } }; exit 1"
 
-echo Opening browser with GPU-free CPU flags at http://localhost:5050 ...
+echo Opening browser with GPU-free CPU flags at http://localhost:5051 ...
 if exist "%BROWSER_EXE%" (
-    start "" "%BROWSER_EXE%" %BROWSER_FLAGS% http://localhost:5050
+    start "" "%BROWSER_EXE%" %BROWSER_FLAGS% http://localhost:5051
 ) else (
-    start http://localhost:5050
+    start http://localhost:5051
 )
 
 :running
 echo.
 echo =======================================================
 echo   3D Smart Library is live and running!
-echo   Local URL: http://localhost:5050
+echo   Local URL: http://localhost:5051
 echo   Keep this window open to maintain server connection.
 echo =======================================================
 echo.

@@ -37,6 +37,12 @@ let shelvesInteractionGroup = new THREE.Group();
 shelvesInteractionGroup.name = 'ShelvesInteractionGroup';
 let ambientLight, dirLight, aisleLights = [];
 
+// Entrance Door variables
+let doorModel = null;
+let doorHingePivot = null;
+let isDoorOpen = false;
+let plaqueModel = null;
+
 // Audio Synthesizer (Zero asset dependency)
 class SoundFX {
   constructor() {
@@ -234,9 +240,9 @@ function initThree() {
   scene.background = new THREE.Color('#141722');
   scene.fog = new THREE.FogExp2('#141722', 0.005);
 
-  // Camera - Positioned just inside library entrance for magnificent hall perspective
+  // Camera - Positioned outside facing front wall, entrance door & memorial plaque
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 80);
-  camera.position.set(0, 1.55, 6.2);
+  camera.position.set(0.65, 1.35, 10.3);
 
   // Group to hold all dynamic 3D books
   if (!booksGroup) booksGroup = new THREE.Group();
@@ -285,8 +291,8 @@ function initThree() {
     controls.dampingFactor = 0.05;
     controls.maxPolarAngle = Math.PI / 2 + 0.02; // Don't go below floor
     controls.minDistance = 0.4;
-    controls.maxDistance = 22;
-    controls.target.set(0, 1.25, 0); // Focus into center of library
+    controls.maxDistance = 26;
+    controls.target.set(0.65, 1.25, 7.45); // Focus on entrance door and memorial plaque
     controls.update();
   }
 
@@ -296,9 +302,6 @@ function initThree() {
   window.renderer = renderer;
   window.controls = controls;
   window.state = state;
-  window.booksGroup = booksGroup;
-  window.categorySignsGroup = categorySignsGroup;
-  window.shelvesInteractionGroup = shelvesInteractionGroup;
 
   window.addEventListener('resize', onWindowResize);
   renderer.domElement.addEventListener('click', onCanvasClick);
@@ -383,6 +386,24 @@ function setupLighting() {
     pLight.position.set(3.8, 2.45, z);
     scene.add(pLight);
   });
+
+  // Exterior entrance architectural warm lighting
+  const entranceSpot = new THREE.SpotLight(0xfffaea, 2.8, 14, Math.PI / 3.2, 0.5, 1.2);
+  entranceSpot.position.set(0, 2.7, 9.2);
+  entranceSpot.target.position.set(0, 1.15, 7.41);
+  scene.add(entranceSpot);
+  scene.add(entranceSpot.target);
+
+  const entranceFill = new THREE.PointLight(0xfff3df, 1.2, 8);
+  entranceFill.position.set(0, 1.7, 8.8);
+  scene.add(entranceFill);
+
+  // Memorial Plaque accent spotlight
+  const plaqueSpot = new THREE.SpotLight(0xfff6e8, 2.2, 8, Math.PI / 3.5, 0.4, 1.0);
+  plaqueSpot.position.set(1.72, 2.65, 8.8);
+  plaqueSpot.target.position.set(1.72, 1.35, 7.52);
+  scene.add(plaqueSpot);
+  scene.add(plaqueSpot.target);
 }
 
 function onWindowResize() {
@@ -443,6 +464,218 @@ async function loadLayoutAndBooks() {
 }
 
 // ==========================================================================
+// Entrance Door (5plank_door_light_oak.glb) & Gate Transition
+// ==========================================================================
+function createDoorHeaderPanel() {
+  const existing = scene.getObjectByName('DoorHeaderPanel');
+  if (existing) scene.remove(existing);
+
+  // Opening is 1.59m wide between wLeft (-0.795) and wRight (+0.795)
+  // Height from 2.22 to 2.64 (0.42m tall), center Y = 2.43, Z = 7.41, thickness = 0.16m
+  const headerGeo = new THREE.BoxGeometry(1.64, 0.44, 0.16);
+  const headerMat = new THREE.MeshStandardMaterial({
+    color: 0xf2f2f4, // Clean white wall material matching Mesh_522 / Mesh_523
+    roughness: 0.85,
+    metalness: 0.02
+  });
+  const headerMesh = new THREE.Mesh(headerGeo, headerMat);
+  headerMesh.name = 'DoorHeaderPanel';
+  headerMesh.position.set(0, 2.43, 7.41);
+  headerMesh.receiveShadow = true;
+  scene.add(headerMesh);
+}
+
+function loadDoorModel() {
+  if (!THREE.GLTFLoader) return;
+
+  // Create architectural header panel to perfectly seal opening above the door
+  createDoorHeaderPanel();
+
+  const loader = new THREE.GLTFLoader();
+  loader.load(
+    'door.glb',
+    (gltf) => {
+      doorModel = gltf.scene;
+      doorModel.name = 'EntranceDoorAssembly';
+
+      doorModel.traverse((child) => {
+        if (child.name === 'Door_Hinge_Pivot') {
+          doorHingePivot = child;
+        }
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          if (child.material) {
+            // Check if metal hardware (handles, rosettes, hinges, latch)
+            const isMetal = child.name.includes('Handle') || child.name.includes('Hinge') || 
+                            child.name.includes('Latch') || (child.material.name && (child.material.name.includes('Metal') || child.material.name.includes('Hardware') || child.material.name.includes('Steel')));
+            if (isMetal) {
+              child.material.metalness = 0.95;
+              child.material.roughness = 0.18;
+              if (child.material.color) {
+                child.material.color.set('#24262b'); // Premium brushed architectural graphite steel
+              }
+            } else {
+              // Rich natural golden oak wood finishing
+              child.material.roughness = 0.30;
+              child.material.metalness = 0.04;
+              if (child.material.map) {
+                child.material.map.encoding = THREE.sRGBEncoding;
+              }
+              if (child.material.color) {
+                child.material.color.set('#dfc299'); // Natural golden honey oak warm wood tone
+              }
+            }
+          }
+        }
+      });
+
+      // Wall opening is 1.59m wide. Casing width is 0.962m.
+      // Scale to 1.67m wide to cleanly overlap wall edges by ~4cm on each side (zero gaps!)
+      const scaleX = 1.67 / 0.962;
+      const scaleY = 2.22 / 2.111;
+      doorModel.scale.set(scaleX, scaleY, 1.15);
+      doorModel.position.set(0, 0.00, 7.41);
+
+      scene.add(doorModel);
+      console.log('Entrance door fitted seamlessly into doorway!');
+    },
+    undefined,
+    (err) => {
+      console.warn('Could not load door.glb:', err);
+    }
+  );
+}
+
+function loadPlaqueModel() {
+  if (!THREE.GLTFLoader) return;
+  const loader = new THREE.GLTFLoader();
+  loader.load(
+    'plaque.glb',
+    (gltf) => {
+      plaqueModel = gltf.scene;
+      plaqueModel.name = 'LibraryMemorialPlaque';
+
+      plaqueModel.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          if (child.material) {
+            child.material.roughness = 0.26;
+            child.material.metalness = 0.08;
+            if (child.material.map) {
+              child.material.map.encoding = THREE.sRGBEncoding;
+            }
+          }
+        }
+      });
+
+      // Mount to the right of the entrance door on the front wall
+      // Door casing ends at X = +0.835, front wall surface is at Z = 7.490
+      const scale = 0.54;
+      plaqueModel.scale.set(scale, scale, scale);
+      plaqueModel.position.set(1.72, 1.35, 7.525);
+
+      scene.add(plaqueModel);
+      console.log('CH Memorial Library Plaque mounted successfully on the entrance wall!');
+    },
+    undefined,
+    (err) => {
+      console.warn('Could not load plaque.glb:', err);
+    }
+  );
+}
+
+function openDoorAndEnter(callback) {
+  isDoorOpen = true;
+  sfx.playSwoosh();
+
+  const overlay = document.getElementById('entrance-gate-overlay');
+  if (overlay) overlay.classList.add('hidden');
+
+  controls.enabled = false;
+
+  const tl = gsap.timeline({
+    onComplete: () => {
+      controls.enabled = true;
+      if (callback) callback();
+    }
+  });
+
+  // 1. Swing door hinge open inward into library
+  if (doorHingePivot) {
+    tl.to(doorHingePivot.rotation, {
+      y: -Math.PI * 0.48, // Swing 86 degrees inward
+      duration: 1.8,
+      ease: 'power2.inOut'
+    }, 0);
+  }
+
+  // 2. Camera glides smoothly forward through doorway into corridor
+  tl.to(camera.position, {
+    x: 0,
+    y: 1.55,
+    z: 6.0,
+    duration: 2.2,
+    ease: 'power2.inOut',
+    onUpdate: () => controls.update()
+  }, 0.2);
+
+  tl.to(controls.target, {
+    x: 0,
+    y: 1.25,
+    z: 0,
+    duration: 2.0,
+    ease: 'power2.out',
+    onUpdate: () => controls.update()
+  }, 0.2);
+}
+
+function closeDoorAndExit(callback) {
+  isDoorOpen = false;
+  sfx.playClick();
+
+  controls.enabled = false;
+
+  const tl = gsap.timeline({
+    onComplete: () => {
+      controls.enabled = true;
+      const overlay = document.getElementById('entrance-gate-overlay');
+      if (overlay) overlay.classList.remove('hidden');
+      if (callback) callback();
+    }
+  });
+
+  // Camera glides back outside to front wall entrance view
+  tl.to(camera.position, {
+    x: 0.65,
+    y: 1.35,
+    z: 10.3,
+    duration: 1.8,
+    ease: 'power2.inOut',
+    onUpdate: () => controls.update()
+  }, 0);
+
+  tl.to(controls.target, {
+    x: 0.65,
+    y: 1.25,
+    z: 7.45,
+    duration: 1.8,
+    ease: 'power2.inOut',
+    onUpdate: () => controls.update()
+  }, 0);
+
+  // Swing door closed
+  if (doorHingePivot) {
+    tl.to(doorHingePivot.rotation, {
+      y: 0,
+      duration: 1.4,
+      ease: 'power2.inOut'
+    }, 0.5);
+  }
+}
+
+// ==========================================================================
 // Load 3D Library Room Model (.GLB)
 // ==========================================================================
 function loadLibraryModel() {
@@ -475,12 +708,21 @@ function loadLibraryModel() {
             child.castShadow = true;
             child.receiveShadow = true;
 
-            // Room Floor (Mesh_518): Elegant polished library floor
+            // Room Floor (Mesh_518): Dark polished tile with rich reflections
             if (child.name === 'Mesh_518') {
               state.roomArchitecture.floor = child;
               if (child.material) {
-                child.material.roughness = 0.45;
-                child.material.metalness = 0.15;
+                child.material.color = new THREE.Color('#0a0d14'); // Deep dark reflective tile
+                child.material.roughness = 0.14;
+                child.material.metalness = 0.42;
+              }
+            }
+
+            // Shelf wooden finish (Teak wood): Rich reflections
+            if (child.isMesh && (child.name.includes('Shelf') || child.name.includes('Model'))) {
+              if (child.material) {
+                child.material.roughness = 0.22;
+                child.material.metalness = 0.12;
               }
             }
 
@@ -501,16 +743,24 @@ function loadLibraryModel() {
           }
         });
 
-        // Ensure half shelf (Right_Row3_Shelf2) is straight and flush with Shelf 1 and Shelf 3
-        const halfShelf = model.getObjectByName('Right_Row3_Shelf2_HALF_SHELF_1Bay_5Rows');
-        if (halfShelf) {
-          halfShelf.position.z = -3.101; // Perfectly straight alignment with Row 3
+        // Perfectly fit and level half-shelf in the center gap between Shelf 1 and Shelf 3
+        const halfShelfParent = model.getObjectByName('Right_Row3_Shelf2_HALF_SHELF_1Bay_5Rows');
+        if (halfShelfParent) {
+          halfShelfParent.position.set(4.275, 0, -3.101); // Centers perfectly at X=4.275 and flush at Z=-3.101
+        }
+        const halfShelfMesh = model.getObjectByName('Right_Row3_Shelf2_HALF_SHELF_1Bay_5Rows_Model');
+        if (halfShelfMesh) {
+          halfShelfMesh.position.set(0, 0, 0); // Mesh local origin at 0
         }
 
         scene.add(model);
         state.libraryModel = model;
         state.modelLoaded = true;
         console.log('3D Library GLB loaded successfully!');
+
+        // Load and fit entrance door
+        loadDoorModel();
+        loadPlaqueModel();
 
         // Apply initial room wall distance (from localStorage or recommended 0.80m)
         const savedDist = parseFloat(localStorage.getItem('smart_library_wall_distance')) || 0.80;
@@ -907,9 +1157,9 @@ function computeShelfSlotCoordinates(targetShelf, rackNum, bayNum, slotInBay, fa
     offsetX = 0.12 + (slotInBay - 1) * bookWidth;
   }
 
-  // Z position: Both full shelves and half shelves have their center at Z = -3.101 for Row 3, or shelfBaseZ + 0.279 for other full shelves
+  // Z position: Both full shelves and half shelves have their center aligned at shelfBaseZ + 0.279
   const isBack = face === 'back';
-  const centerZ = targetShelf.is_half ? shelfBaseZ : (shelfBaseZ + 0.279);
+  const centerZ = shelfBaseZ + 0.279;
   const zPos = isBack ? (centerZ - 0.140) : (centerZ + 0.140);
 
   return {
@@ -1011,21 +1261,20 @@ function rebuildAll3DBooks() {
         bayNum = parseInt(book.customBay) || 1;
         slotInBay = parseInt(book.customSlot) || 1;
       } else {
-        // Auto sequence: Middle (3) -> Lower (2) -> Bottom (1) -> Upper (4) -> Top (5)
-        // Find next unoccupied slot across available shelf faces
+        // Auto sequence: Distribute books evenly across all shelf faces (Front & Back),
+        // filling Middle Rack 3 first, then Lower 2, Bottom 1, Upper 4, Top 5
         let found = false;
         while (!found) {
-          const slotsPerFace = 140; // 5 racks * 28 slots per full shelf face
-          const faceIdx = Math.floor(autoIndex / slotsPerFace) % catFaces.length;
+          const faceIdx = autoIndex % catFaces.length;
           targetFaceObj = catFaces[faceIdx];
           face = targetFaceObj.face;
           const targetShelf = targetFaceObj.shelf;
 
-          const slotInFace = autoIndex % slotsPerFace;
-          const rackStep = Math.floor(slotInFace / (slotsPerBay * 2)); // 0 to 4
+          const slotPerFaceIndex = Math.floor(autoIndex / catFaces.length);
+          const rackStep = Math.floor(slotPerFaceIndex / (slotsPerBay * 2));
           rackNum = rackFillOrder[rackStep % rackFillOrder.length];
 
-          const slotInRack = slotInFace % (slotsPerBay * 2);
+          const slotInRack = slotPerFaceIndex % (slotsPerBay * 2);
           bayNum = targetShelf.is_half ? 1 : (slotInRack < slotsPerBay ? 1 : 2);
           slotInBay = (slotInRack % slotsPerBay) + 1;
 
@@ -1101,18 +1350,12 @@ function focusOnBook(bookMesh) {
   // Target book world position
   const targetPos = bookMesh.userData.originalPosition.clone();
   
-  // Camera waypoint path:
-  // If Front book (+Z): approach from front aisle at Z = targetPos.z + 1.25
-  // If Back book (-Z): approach from back aisle at Z = targetPos.z - 1.25
-  const zSign = isBack ? -1 : +1;
-  const corridorZ = targetPos.z + zSign * 1.20;
-  const aisleCameraPos = new THREE.Vector3(
-    targetPos.x, 
-    Math.max(targetPos.y, 1.25), 
-    targetPos.z + zSign * 1.25
-  );
-
-  const lookAtTarget = new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z);
+  // Clean walkway Z coordinates:
+  // Front face walkway is at targetPos.z + 0.85 (south aisle)
+  // Back face walkway is at targetPos.z - 0.85 (north aisle)
+  const walkwayZ = isBack ? (targetPos.z - 0.85) : (targetPos.z + 0.85);
+  const finalCamPos = new THREE.Vector3(targetPos.x, Math.max(targetPos.y, 1.25), walkwayZ);
+  const lookAtTarget = targetPos.clone();
 
   // Disable controls during flight
   controls.enabled = false;
@@ -1120,7 +1363,7 @@ function focusOnBook(bookMesh) {
   const tl = gsap.timeline({
     onComplete: () => {
       state.isNavigating = false;
-      banner.style.display = 'none';
+      if (banner) banner.style.display = 'none';
       controls.enabled = true;
       controls.target.copy(lookAtTarget);
 
@@ -1129,34 +1372,71 @@ function focusOnBook(bookMesh) {
     }
   });
 
-  // Step 1: Fly along central corridor to row entrance
+  // If outside entrance, open door smoothly and hide entrance overlay
+  const isOutside = camera.position.z > 7.4;
+  if (isOutside) {
+    const overlay = document.getElementById('entrance-gate-overlay');
+    if (overlay) overlay.classList.add('hidden');
+    if (doorHingePivot && !isDoorOpen) {
+      tl.to(doorHingePivot.rotation, {
+        y: -Math.PI * 0.48,
+        duration: 1.2,
+        ease: 'power2.inOut'
+      }, 0);
+      isDoorOpen = true;
+    }
+  }
+
+  // Step 0: If already deep inside an aisle, smoothly exit back to central corridor (X = 0)
+  if (Math.abs(camera.position.x) > 0.5) {
+    tl.to(camera.position, {
+      x: 0,
+      y: 1.6,
+      duration: 0.7,
+      ease: 'power2.inOut',
+      onUpdate: () => controls.update()
+    });
+  }
+
+  // Step 1: Fly strictly along the wide central corridor (strictly X = 0) to the exact row walkway
   tl.to(camera.position, {
     x: 0,
     y: 1.6,
-    z: corridorZ,
-    duration: 1.1,
+    z: walkwayZ,
+    duration: 1.2,
     ease: 'power2.inOut',
     onUpdate: () => controls.update()
   });
 
-  // Step 2: Turn into aisle and zoom in directly facing the rack of books from front or back
-  tl.to(camera.position, {
-    x: aisleCameraPos.x,
-    y: aisleCameraPos.y,
-    z: aisleCameraPos.z,
-    duration: 1.4,
+  // Step 2: Orient camera to look directly into the aisle from central walkway
+  tl.to(controls.target, {
+    x: targetPos.x * 0.6,
+    y: targetPos.y,
+    z: walkwayZ,
+    duration: 0.5,
     ease: 'power2.out',
     onUpdate: () => controls.update()
-  }, '-=0.1');
+  }, '-=0.3');
 
-  // Rotate camera view smoothly towards target book
+  // Step 3: Glide cleanly along that aisle directly in front of the book slot
+  tl.to(camera.position, {
+    x: finalCamPos.x,
+    y: finalCamPos.y,
+    z: finalCamPos.z,
+    duration: 1.1,
+    ease: 'power2.out',
+    onUpdate: () => controls.update()
+  });
+
+  // Step 4: Lock focus on the book
   tl.to(controls.target, {
     x: lookAtTarget.x,
     y: lookAtTarget.y,
     z: lookAtTarget.z,
-    duration: 1.3,
-    ease: 'power2.out'
-  }, '-=1.3');
+    duration: 0.7,
+    ease: 'power2.out',
+    onUpdate: () => controls.update()
+  }, '-=0.7');
 }
 
 /**
@@ -1292,6 +1572,26 @@ function onCanvasClick(event) {
 
   if (!raycaster || !camera) return;
 
+  // 0. Check if entrance door was clicked from outside
+  if (doorModel && (!isDoorOpen || camera.position.z > 7.4)) {
+    const doorIntersects = raycaster.intersectObjects(doorModel.children, true);
+    if (doorIntersects.length > 0) {
+      openDoorAndEnter();
+      return;
+    }
+  }
+
+  // 0b. Check if memorial plaque was clicked from outside to inspect up close
+  if (plaqueModel && camera.position.z > 7.4) {
+    const plaqueIntersects = raycaster.intersectObjects(plaqueModel.children, true);
+    if (plaqueIntersects.length > 0) {
+      sfx.playClick();
+      gsap.to(camera.position, { x: 1.72, y: 1.35, z: 9.3, duration: 1.2, ease: 'power2.inOut', onUpdate: () => controls.update() });
+      gsap.to(controls.target, { x: 1.72, y: 1.35, z: 7.52, duration: 1.2, ease: 'power2.inOut', onUpdate: () => controls.update() });
+      return;
+    }
+  }
+
   // 1. Check if a 3D book was clicked
   const bookIntersects = (booksGroup && booksGroup.children) ? raycaster.intersectObjects(booksGroup.children) : [];
   if (bookIntersects.length > 0) {
@@ -1370,12 +1670,20 @@ function setupEventListeners() {
     }
   });
 
+  // Entrance Gate Enter Button
+  addSafeListener('gate-enter-btn', 'click', () => {
+    openDoorAndEnter();
+  });
+
   // Camera Action Buttons
   addSafeListener('entrance-cam-btn', 'click', () => {
     sfx.playClick();
     if (state.focusedBookMesh) putBackBook(false);
-    gsap.to(camera.position, { x: 0, y: 1.55, z: 6.2, duration: 1.5, ease: 'power2.inOut' });
-    gsap.to(controls.target, { x: 0, y: 1.25, z: 0, duration: 1.5, ease: 'power2.inOut' });
+    if (camera.position.z > 8.0) {
+      openDoorAndEnter();
+    } else {
+      closeDoorAndExit();
+    }
   });
 
   addSafeListener('overview-cam-btn', 'click', () => {

@@ -32,9 +32,9 @@
 
     // Detect if page was opened via local file protocol (file:///) instead of server
     if (window.location.protocol === 'file:') {
-      fetch('http://localhost:5050/api/books', { mode: 'no-cors' })
+      fetch('http://localhost:5051/api/books', { mode: 'no-cors' })
         .then(() => {
-          window.location.href = 'http://localhost:5050';
+          window.location.href = 'http://localhost:5051';
         })
         .catch(() => {
           const showFileProtoWarning = () => {
@@ -55,7 +55,7 @@
                   </div>
                   <div style="color: #cbd5e1; font-size: 0.83rem; line-height: 1.6;">
                     1. പ്രോജക്റ്റ് ഫോൾഡറിലെ <b>run_library.bat</b> ഫയലിൽ ഡബിൾ ക്ലിക്ക് ചെയ്യുക.<br>
-                    2. തുടർന്ന് ബ്രൗസറിൽ <a href="http://localhost:5050" style="color: #60a5fa; text-decoration: underline; font-weight: bold;">http://localhost:5050</a> തുറക്കുക.
+                    2. തുടർന്ന് ബ്രൗസറിൽ <a href="http://localhost:5051" style="color: #60a5fa; text-decoration: underline; font-weight: bold;">http://localhost:5051</a> തുറക്കുക.
                   </div>
                 </div>
               `;
@@ -94,6 +94,19 @@
       <div class="progress-bar-bg">
         <div id="progress-bar" class="progress-bar"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Entrance Gate Overlay (Outside View with Door) -->
+  <div id="entrance-gate-overlay" class="entrance-gate-overlay">
+    <div class="entrance-gate-content">
+      <div class="gate-icon-pulse"><i data-lucide="door-closed"></i></div>
+      <h2>3D സ്മാർട്ട് ലൈബ്രറി</h2>
+      <p>ലൈബ്രറിയുടെ വാതിൽ തുറന്ന് ഉള്ളിലേക്ക് പ്രവേശിക്കുക</p>
+      <button id="gate-enter-btn" class="gate-enter-btn" type="button">
+        <i data-lucide="door-open"></i>
+        <span>വാതിൽ തുറന്ന് പ്രവേശിക്കുക (Enter)</span>
+      </button>
     </div>
   </div>
 
