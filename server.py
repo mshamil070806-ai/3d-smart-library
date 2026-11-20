@@ -166,6 +166,9 @@ class LibraryHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 shelf_name = payload.get("shelfName")
                 side = payload.get("side")
                 row = payload.get("row")
+                category_mode = payload.get("categoryMode")
+                category_front = payload.get("categoryFront")
+                category_back = payload.get("categoryBack")
 
                 if os.path.exists(LAYOUT_FILE):
                     with open(LAYOUT_FILE, "r", encoding="utf-8") as f:
@@ -180,7 +183,14 @@ class LibraryHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                             match = True
                         
                         if match:
-                            s["category"] = cat_id
+                            if cat_id is not None:
+                                s["category"] = cat_id
+                            if category_mode is not None:
+                                s["category_mode"] = category_mode
+                            if category_front is not None:
+                                s["category_front"] = category_front
+                            if category_back is not None:
+                                s["category_back"] = category_back
 
                     # Also update category row lists to stay in sync
                     if side and row is not None:

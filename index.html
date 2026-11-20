@@ -85,6 +85,11 @@
         <span>Overview</span>
       </button>
 
+      <button id="room-settings-btn" class="action-btn" title="റൂം വീതിയും ചുവരുകളുടെ അകലവും മാറ്റുക">
+        <i data-lucide="maximize-2"></i>
+        <span>റൂം അളവുകൾ (Walls)</span>
+      </button>
+
       <button id="shelf-mgr-btn" class="action-btn" title="ഷെൽഫുകളുടെ കാറ്റഗറി നിയന്ത്രിക്കുക">
         <i data-lucide="layers"></i>
         <span>ഷെൽഫ് & കാറ്റഗറികൾ</span>
@@ -242,30 +247,38 @@
             <i data-lucide="sliders"></i>
             <span>ഷെൽഫിലെ സ്ഥാനം കസ്റ്റമൈസ് ചെയ്യുക (Customize Shelf Placement)</span>
           </div>
-          <div class="form-row three-col">
+          <div class="form-row four-col" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
             <div class="form-group">
-              <label for="book-rack">റാക്ക് ലെവൽ (Rack Level)</label>
+              <label for="book-face">ഷെൽഫ് വശം (Face)</label>
+              <select id="book-face">
+                <option value="auto">Auto (മുൻപ് / പിൻപ്)</option>
+                <option value="front">മുൻവശം (Front Face)</option>
+                <option value="back">പിൻവശം (Back Face)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="book-rack">റാക്ക് ലെവൽ (Rack)</label>
               <select id="book-rack">
-                <option value="auto">Auto (നടുവിലെ റാക്ക് 3 ആദ്യം)</option>
-                <option value="3">റാക്ക് 3 - നടുവിലെ റാക്ക് (Middle Level 3)</option>
-                <option value="2">റാക്ക് 2 - താഴത്തെ നടുവിലെ റാക്ക് (Lower 2)</option>
-                <option value="1">റാക്ക് 1 - ഏറ്റവും താഴെ (Bottom 1)</option>
-                <option value="4">റാക്ക് 4 - മുകളിലെ നടുവിലെ റാക്ക് (Upper 4)</option>
-                <option value="5">റാക്ക് 5 - ഏറ്റവും മുകളിൽ (Top 5)</option>
+                <option value="auto">Auto (റാക്ക് 3 ആദ്യം)</option>
+                <option value="3">റാക്ക് 3 (Middle 3)</option>
+                <option value="2">റാക്ക് 2 (Lower 2)</option>
+                <option value="1">റാക്ക് 1 (Bottom 1)</option>
+                <option value="4">റാക്ക് 4 (Upper 4)</option>
+                <option value="5">റാക്ക് 5 (Top 5)</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="book-bay">അറ / ബേ (Bay Section)</label>
+              <label for="book-bay">അറ / ബേ (Bay)</label>
               <select id="book-bay">
-                <option value="auto">Auto (അടുത്ത ഒഴിഞ്ഞ ഭാഗം)</option>
-                <option value="1">ഇടതുഭാഗം (Bay 1 - Left)</option>
-                <option value="2">വലതുഭാഗം (Bay 2 - Right)</option>
+                <option value="auto">Auto</option>
+                <option value="1">ഇടതുഭാഗം (Bay 1)</option>
+                <option value="2">വലതുഭാഗം (Bay 2)</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="book-slot">സ്ലോട്ട് നമ്പർ (Slot 1-15)</label>
+              <label for="book-slot">സ്ലോട്ട് (Slot 1-15)</label>
               <select id="book-slot">
-                <option value="auto">Auto (അടുത്ത ഒഴിഞ്ഞ സ്ലോട്ട്)</option>
+                <option value="auto">Auto</option>
                 <option value="1">Slot 1</option>
                 <option value="2">Slot 2</option>
                 <option value="3">Slot 3</option>
@@ -387,15 +400,24 @@
 
       <form id="edit-location-form" class="modal-form">
         <input type="hidden" id="edit-book-id">
-        <div class="form-group">
-          <label for="edit-book-rack">റാക്ക് ലെവൽ (Rack Level) *</label>
-          <select id="edit-book-rack" required>
-            <option value="3">റാക്ക് 3 - നടുവിലെ റാക്ക് (Middle Level 3) [Recommended]</option>
-            <option value="2">റാക്ക് 2 - താഴത്തെ നടുവിലെ റാക്ക് (Lower 2)</option>
-            <option value="1">റാക്ക് 1 - ഏറ്റവും താഴെ (Bottom 1)</option>
-            <option value="4">റാക്ക് 4 - മുകളിലെ നടുവിലെ റാക്ക് (Upper 4)</option>
-            <option value="5">റാക്ക് 5 - ഏറ്റവും മുകളിൽ (Top 5)</option>
-          </select>
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label for="edit-book-face">ഷെൽഫ് വശം (Face) *</label>
+            <select id="edit-book-face" required>
+              <option value="front">മുൻവശം (Front Face)</option>
+              <option value="back">പിൻവശം (Back Face)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-book-rack">റാക്ക് ലെവൽ (Rack Level) *</label>
+            <select id="edit-book-rack" required>
+              <option value="3">റാക്ക് 3 - നടുവിലെ റാക്ക് (Middle 3) ★</option>
+              <option value="2">റാക്ക് 2 - താഴത്തെ നടുവിൽ (Lower 2)</option>
+              <option value="1">റാക്ക് 1 - ഏറ്റവും താഴെ (Bottom 1)</option>
+              <option value="4">റാക്ക് 4 - മുകളിലെ നടുവിൽ (Upper 4)</option>
+              <option value="5">റാക്ക് 5 - ഏറ്റവും മുകളിൽ (Top 5)</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-row two-col">
@@ -525,14 +547,42 @@
         <span id="shelf-current-cat-badge" class="cat-pill-badge">നോവലുകൾ</span>
       </div>
 
-      <div class="form-group" style="margin-top: 10px;">
-        <label for="shelf-quick-cat-select">കാറ്റഗറി മാറ്റുക (Change Category):</label>
+      <!-- Category Mode Toggle -->
+      <div class="form-group" style="margin-top: 12px;">
+        <label style="font-weight: 600; font-size: 0.82rem; color: #f1f5f9; display: block; margin-bottom: 6px;">കാറ്റഗറി രീതി (Category Setup):</label>
+        <div style="display: flex; gap: 10px; background: rgba(15, 23, 42, 0.6); padding: 6px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
+          <label style="flex: 1; font-size: 0.78rem; display: flex; align-items: center; gap: 6px; cursor: pointer; color: #e2e8f0;">
+            <input type="radio" name="shelf-cat-mode" id="mode-single" value="single" checked style="accent-color: #3b82f6;">
+            <span>ഷെൽഫ് മുഴുവൻ ഒരൊറ്റ കാറ്റഗറി</span>
+          </label>
+          <label style="flex: 1; font-size: 0.78rem; display: flex; align-items: center; gap: 6px; cursor: pointer; color: #e2e8f0;">
+            <input type="radio" name="shelf-cat-mode" id="mode-split" value="split" style="accent-color: #3b82f6;">
+            <span>മുൻപും പിൻപും വെവ്വേറെ (Separate)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Single Category Select -->
+      <div id="single-cat-wrap" class="form-group" style="margin-top: 10px;">
+        <label for="shelf-quick-cat-select">കാറ്റഗറി തിരഞ്ഞെടുക്കുക (Category):</label>
         <select id="shelf-quick-cat-select">
           <!-- Populated by JS -->
         </select>
       </div>
 
-      <div class="shelf-books-stats">
+      <!-- Split Category Selects (Front & Back) -->
+      <div id="split-cat-wrap" style="display: none; margin-top: 10px;">
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label for="shelf-front-cat-select" style="font-size: 0.8rem; color: #38bdf8;">മുൻവശത്തെ കാറ്റഗറി (Front Face):</label>
+          <select id="shelf-front-cat-select"></select>
+        </div>
+        <div class="form-group">
+          <label for="shelf-back-cat-select" style="font-size: 0.8rem; color: #a78bfa;">പിൻവശത്തെ കാറ്റഗറി (Back Face):</label>
+          <select id="shelf-back-cat-select"></select>
+        </div>
+      </div>
+
+      <div class="shelf-books-stats" style="margin-top: 10px;">
         <span>ഈ ഷെൽഫിലെ പുസ്തകങ്ങൾ: <strong id="shelf-books-count">0</strong></span>
       </div>
     </div>
@@ -549,6 +599,70 @@
     </div>
   </div>
 
+  <!-- Room & Wall Settings Modal -->
+  <div id="room-settings-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog small-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6;">
+            <i data-lucide="maximize-2"></i>
+          </div>
+          <div>
+            <h2>റൂം & ചുവരുകളുടെ അകലം</h2>
+            <p>ഷെൽഫും ചുവരും തമ്മിലുള്ള അകലവും റൂം വീതിയും മാറ്റുക</p>
+          </div>
+        </div>
+        <button id="close-room-modal-btn" class="close-btn">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 24px;">
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-weight: 600; color: #f1f5f9; font-size: 0.92rem;">ചുമരും ഷെൽഫും തമ്മിലുള്ള അകലം (Distance):</label>
+            <span id="wall-distance-value" style="font-weight: 800; color: #38bdf8; font-size: 1rem; font-family: monospace;">0.80 m (80 cm)</span>
+          </div>
+          <input 
+            type="range" 
+            id="wall-distance-slider" 
+            min="0.09" 
+            max="3.00" 
+            step="0.05" 
+            value="0.80"
+            style="width: 100%; cursor: pointer; accent-color: #3b82f6;"
+          />
+          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; margin-top: 6px;">
+            <span>0.09 m (മിനിമം)</span>
+            <span>1.50 m (ഇടത്തരം)</span>
+            <span>3.00 m (വിശാലം)</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px;">
+          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; font-weight: 500;">തയ്യാറാക്കിയ അകലങ്ങൾ (Quick Presets):</label>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+            <button type="button" class="btn secondary preset-dist-btn" data-dist="0.09" style="font-size: 0.78rem; padding: 6px 4px;">9 cm (യഥാർത്ഥം)</button>
+            <button type="button" class="btn secondary preset-dist-btn" data-dist="0.50" style="font-size: 0.78rem; padding: 6px 4px;">50 cm</button>
+            <button type="button" class="btn secondary preset-dist-btn" data-dist="0.80" style="font-size: 0.78rem; padding: 6px 4px; border-color: #3b82f6; color: #38bdf8;">80 cm ★</button>
+            <button type="button" class="btn secondary preset-dist-btn" data-dist="1.50" style="font-size: 0.78rem; padding: 6px 4px;">1.5 മീറ്റർ</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px; padding: 12px; background: rgba(15, 23, 42, 0.6); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); font-size: 0.8rem; color: #94a3b8; line-height: 1.5;">
+          💡 സ്ലൈഡർ നീക്കുമ്പോൾ തത്സമയം 3D-യിൽ ഇരുവശത്തെയും ചുമരുകളും തറയും അകലേക്ക് നീങ്ങുന്നതും വികസിക്കുന്നതും കാണാം.
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="done-room-modal-btn" class="btn primary" style="width: 100%;">
+          <i data-lucide="check"></i>
+          <span>സേവ് ചെയ്യുക (Done)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Bottom Helper Bar -->
   <div class="bottom-helper">
     <div class="helper-pill">
@@ -558,6 +672,6 @@
   </div>
 
   <!-- Main JavaScript Application -->
-  <script src="app.js"></script>
+  <script src="app.js" defer></script>
 </body>
 </html>

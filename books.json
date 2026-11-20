@@ -488,5 +488,105 @@
     "description": "സാമൂഹിക വിമർശകനും ചിന്തകനുമായ എം. എൻ. വിജയന്റെ ജീവിത രേഖകൾ.",
     "color": "#3f6212",
     "year": "2004"
+  },
+  {
+    "id": "BK-050",
+    "barcode": "978817208901",
+    "title": "കുട്ടികളുടെ പഞ്ചതന്ത്രം (Panchatantra)",
+    "author": "വിഷ്ണു ശർമ്മ (Vishnu Sharma)",
+    "category": "kids_stories",
+    "description": "കുട്ടികൾക്ക് ജീവിതമൂല്യങ്ങൾ പകരുന്ന ക്ലാസിക് മൃഗകഥകളുടെ സമാഹാരം.",
+    "color": "#0891b2",
+    "year": "2010"
+  },
+  {
+    "id": "BK-051",
+    "barcode": "978817208902",
+    "title": "മാലി രാമായണം (Mali Ramayanam)",
+    "author": "മാലി (Madhavan Nair)",
+    "category": "kids_stories",
+    "description": "ലളിതമായ മലയാളത്തിൽ കുട്ടികൾക്കായി എഴുതിയ രാമായണ കഥ.",
+    "color": "#0e7490",
+    "year": "1975"
+  },
+  {
+    "id": "BK-052",
+    "barcode": "978817208903",
+    "title": "അക്ബറും ബീർബലും (Akbar & Birbal)",
+    "author": "എൻ. പി. മുഹമ്മദ്",
+    "category": "kids_stories",
+    "description": "ബീർബലിന്റെ ബുദ്ധിസാമർത്ഥ്യം വ്യക്തമാക്കുന്ന രസകരമായ കഥകൾ.",
+    "color": "#06b6d4",
+    "year": "1992"
+  },
+  {
+    "id": "BK-053",
+    "barcode": "978817208904",
+    "title": "ആലീസിന്റെ അത്ഭുത ലോകം (Alice in Wonderland)",
+    "author": "ലൂയിസ് കരോൾ (Lewis Carroll)",
+    "category": "kids_stories",
+    "description": "അത്ഭുതങ്ങളുടെ മാന്ത്രിക ലോകത്തേക്ക് ആലീസിന്റെ സാങ്കൽപ്പിക യാത്ര.",
+    "color": "#0284c7",
+    "year": "1865"
+  },
+  {
+    "id": "BK-054",
+    "barcode": "978817208905",
+    "title": "ജംഗിൾ ബുക്ക് (The Jungle Book)",
+    "author": "റുഡ്യാർഡ് കിപ്ലിംഗ് (Rudyard Kipling)",
+    "category": "kids_stories",
+    "description": "കാട്ടിലെ മൃഗങ്ങൾക്കൊപ്പം വളർന്ന മൗഗ്ലിയുടെ സാഹസിക കഥ.",
+    "color": "#0369a1",
+    "year": "1894"
+  },
+  {
+    "id": "BK-055",
+    "barcode": "978817208906",
+    "title": "ഈസോപ്പ് കഥകൾ (Aesop's Fables)",
+    "author": "ഈസോപ്പ് (Aesop)",
+    "category": "kids_stories",
+    "description": "കുട്ടികൾക്ക് നീതിബോധം നൽകുന്ന സാരോപദേശ കഥകൾ.",
+    "color": "#0891b2",
+    "year": "2005"
+  },
+  {
+    "id": "BK-056",
+    "barcode": "978817208907",
+    "title": "അറേബ്യൻ നൈറ്റ്സ് (Arabian Nights)",
+    "author": "ലോക നാടോടിക്കഥകൾ",
+    "category": "kids_stories",
+    "description": "അലാവുദ്ദീനും അത്ഭുതവിളക്കും, സിന്ദ്ബാദിന്റെ കപ്പൽയാത്രകളും അടങ്ങിയ കഥകൾ.",
+    "color": "#0e7490",
+    "year": "1998"
+  },
+  {
+    "id": "BK-057",
+    "barcode": "978817208706",
+    "title": "കേരള ചരിത്രം (A Survey of Kerala History)",
+    "author": "പ്രൊഫ. എ. ശ്രീധരമേനോൻ",
+    "category": "history",
+    "description": "പ്രാചീന കാലം മുതൽ ആധുനിക കാലം വരെയുള്ള കേരളത്തിന്റെ രാഷ്ട്രീയ സാമൂഹിക ചരിത്രം.",
+    "color": "#d97706",
+    "year": "1967"
+  },
+  {
+    "id": "BK-058",
+    "barcode": "978817208707",
+    "title": "The Discovery of India",
+    "author": "Jawaharlal Nehru",
+    "category": "history",
+    "description": "അഹമ്മദ്നഗർ കോട്ടയിലെ തടവറയിൽ വെച്ച് നെഹ്റു രചിച്ച ഇന്ത്യയുടെ സംസ്കാര ചരിത്രം.",
+    "color": "#b45309",
+    "year": "1946"
+  },
+  {
+    "id": "BK-059",
+    "barcode": "978817208708",
+    "title": "മലബാർ മാനുവൽ (Malabar Manual)",
+    "author": "വില്യം ലോഗൻ (William Logan)",
+    "category": "history",
+    "description": "മലബാറിന്റെ ഭൂമിശാസ്ത്രം, ജനജീവിതം, കാർഷിക രീതികൾ എന്നിവ പ്രതിപാദിക്കുന്ന ബൃഹദ്ഗ്രന്ഥം.",
+    "color": "#92400e",
+    "year": "1887"
   }
 ]

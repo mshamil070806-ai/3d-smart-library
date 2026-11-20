@@ -14,7 +14,16 @@ const state = {
   focusedBookMesh: null,
   inspectedShelf: null,
   isNavigating: false,
-  originalBookTransform: null
+  originalBookTransform: null,
+  roomArchitecture: {
+    leftWall: null,
+    rightWall: null,
+    floor: null,
+    backWall: null,
+    frontLeftWall: null,
+    frontRightWall: null,
+    wallDistance: 0.80
+  }
 };
 
 // Scene, Camera, Renderer, Controls
@@ -88,6 +97,21 @@ class SoundFX {
     osc.start();
     osc.stop(this.ctx.currentTime + 0.09);
   }
+  playSuccess() {
+    this.init();
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(523.25, this.ctx.currentTime);
+    osc.frequency.setValueAtTime(659.25, this.ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.28);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + 0.3);
+  }
 }
 const sfx = new SoundFX();
 
@@ -107,12 +131,33 @@ function initThree() {
   
   // Scene
   scene = new THREE.Scene();
-  scene.background = new THREE.Color('#0f172a');
-  scene.fog = new THREE.FogExp2('#0f172a', 0.015);
+  scene.background = new THREE.Color('#141722');
+  scene.fog = new THREE.FogExp2('#141722', 0.005);
 
-  // Camera - Positioned naturally inside library entrance
+  // Camera - Positioned just inside library entrance for magnificent hall perspective
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 80);
-  camera.position.set(0, 2.0, 5.0); // Inside entrance foyer facing shelves
+  camera.position.set(0, 1.55, 6.2);
+
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  container.appendChild(renderer.domElement);
+
+  // Controls
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.maxPolarAngle = Math.PI / 2 + 0.02; // Don't go below floor
+  controls.minDistance = 0.4;
+  controls.maxDistance = 22;
+  controls.target.set(0, 1.25, 0); // Focus into center of library
+  controls.update();
 
   // Group to hold all dynamic 3D books
   booksGroup = new THREE.Group();
@@ -129,57 +174,74 @@ function initThree() {
   shelvesInteractionGroup.name = 'ShelvesInteractionGroup';
   scene.add(shelvesInteractionGroup);
 
+  // Architectural modern ceiling with LED light panels
+  createArchitecturalCeiling();
+
   // Lighting
   setupLighting();
-
-  // Renderer with fallback
-  try {
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'default' });
-  } catch (e1) {
-    try {
-      renderer = new THREE.WebGLRenderer({ antialias: false, failIfMajorPerformanceCaveat: false });
-    } catch (e2) {
-      console.error('WebGLRenderer fallback failed:', e2);
-    }
-  }
-
-  if (renderer) {
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    container.appendChild(renderer.domElement);
-
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.maxPolarAngle = Math.PI / 2 + 0.02; // Don't go below floor
-    controls.minDistance = 0.4;
-    controls.maxDistance = 25;
-    controls.target.set(0, 1.2, 0); // Focus into center of library
-    controls.update();
-
-    renderer.domElement.addEventListener('click', onCanvasClick);
-  }
 
   // Raycaster for clicking books in 3D
   raycaster = new THREE.Raycaster();
   mouse = new THREE.Vector2();
 
   window.addEventListener('resize', onWindowResize);
+  renderer.domElement.addEventListener('click', onCanvasClick);
+}
+
+function createArchitecturalCeiling() {
+  const ceilingGroup = new THREE.Group();
+  ceilingGroup.name = 'CeilingGroup';
+
+  // Base acoustic architectural ceiling slab resting flush on top of 2.64m walls
+  const ceilingGeo = new THREE.BoxGeometry(13.6, 0.08, 15.2);
+  const ceilingMat = new THREE.MeshStandardMaterial({
+    color: 0x1f2430, // Clean deep modern architectural ceiling
+    roughness: 0.8,
+    metalness: 0.1
+  });
+  const ceilingMesh = new THREE.Mesh(ceilingGeo, ceilingMat);
+  ceilingMesh.position.set(0, 2.68, 0);
+  ceilingMesh.receiveShadow = true;
+  ceilingGroup.add(ceilingMesh);
+
+  // Modern linear architectural LED light panels (emissive glow)
+  const lightTrackMat = new THREE.MeshBasicMaterial({ color: 0xfffaed });
+
+  // Center corridor light strip
+  const centerTrackGeo = new THREE.BoxGeometry(0.35, 0.02, 13.5);
+  const centerTrack = new THREE.Mesh(centerTrackGeo, lightTrackMat);
+  centerTrack.position.set(0, 2.635, 0);
+  ceilingGroup.add(centerTrack);
+
+  // Left aisle light strip (X = -3.8)
+  const leftTrackGeo = new THREE.BoxGeometry(0.25, 0.02, 13.0);
+  const leftTrack = new THREE.Mesh(leftTrackGeo, lightTrackMat);
+  leftTrack.position.set(-3.8, 2.635, 0);
+  ceilingGroup.add(leftTrack);
+
+  // Right aisle light strip (X = 3.8)
+  const rightTrackGeo = new THREE.BoxGeometry(0.25, 0.02, 13.0);
+  const rightTrack = new THREE.Mesh(rightTrackGeo, lightTrackMat);
+  rightTrack.position.set(3.8, 2.635, 0);
+  ceilingGroup.add(rightTrack);
+
+  scene.add(ceilingGroup);
+  state.roomArchitecture.ceiling = ceilingMesh;
 }
 
 function setupLighting() {
+  // Soft natural sky-ground gradient illumination
+  const hemiLight = new THREE.HemisphereLight(0xfff7ee, 0x242a38, 1.3);
+  hemiLight.position.set(0, 8, 0);
+  scene.add(hemiLight);
+
   // Soft warm ambient library light
-  ambientLight = new THREE.AmbientLight(0xfff5eb, 1.2);
+  ambientLight = new THREE.AmbientLight(0xfff5eb, 0.65);
   scene.add(ambientLight);
 
-  // Main directional skylight / ceiling track
-  dirLight = new THREE.DirectionalLight(0xffeedd, 1.3);
-  dirLight.position.set(3, 8, 4);
+  // Main directional light
+  dirLight = new THREE.DirectionalLight(0xfffaea, 1.1);
+  dirLight.position.set(3, 7, 4);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.width = 2048;
   dirLight.shadow.mapSize.height = 2048;
@@ -188,14 +250,27 @@ function setupLighting() {
   dirLight.shadow.bias = -0.0005;
   scene.add(dirLight);
 
-  // Central corridor lighting
-  const corridorLight = new THREE.PointLight(0xffe8c8, 1.5, 25);
-  corridorLight.position.set(0, 3.5, 0);
-  scene.add(corridorLight);
+  // Central corridor lighting fixtures along the ceiling
+  const zPositions = [5.2, 2.6, 0.0, -2.6, -5.2];
+  zPositions.forEach(z => {
+    const pLight = new THREE.PointLight(0xfff1dc, 1.25, 8.5);
+    pLight.position.set(0, 2.45, z);
+    scene.add(pLight);
+  });
 
-  const doorLight = new THREE.PointLight(0xfff0dd, 1.2, 16);
-  doorLight.position.set(0, 2.5, 5.0);
-  scene.add(doorLight);
+  // Left aisle downlights
+  [-4.0, 0.0, 4.0].forEach(z => {
+    const pLight = new THREE.PointLight(0xffeed8, 0.95, 6.5);
+    pLight.position.set(-3.8, 2.45, z);
+    scene.add(pLight);
+  });
+
+  // Right aisle downlights
+  [-4.0, 0.0, 4.0].forEach(z => {
+    const pLight = new THREE.PointLight(0xffeed8, 0.95, 6.5);
+    pLight.position.set(3.8, 2.45, z);
+    scene.add(pLight);
+  });
 }
 
 function onWindowResize() {
@@ -259,29 +334,23 @@ async function loadLayoutAndBooks() {
 // Load 3D Library Room Model (.GLB)
 // ==========================================================================
 function loadLibraryModel() {
+  const loader = new THREE.GLTFLoader();
   const progressBar = document.getElementById('progress-bar');
   const loadingStatus = document.getElementById('loading-status');
-  const screen = document.getElementById('loading-screen');
 
-  if (typeof THREE === 'undefined' || typeof THREE.GLTFLoader === 'undefined') {
-    console.error('GLTFLoader is undefined');
-    if (screen) setTimeout(() => screen.classList.add('hidden'), 1500);
-    return;
-  }
-
-  const loader = new THREE.GLTFLoader();
-
-  // Watchdog: hide loading screen if it takes too long
-  const watchdog = setTimeout(() => {
+  const hideLoading = () => {
+    const screen = document.getElementById('loading-screen');
     if (screen && !screen.classList.contains('hidden')) {
       screen.classList.add('hidden');
     }
-  }, 6000);
+  };
+
+  // Safety fallback: Ensure loading screen NEVER stays stuck forever
+  setTimeout(hideLoading, 5000);
 
   loader.load(
     'library.glb',
     (gltf) => {
-      clearTimeout(watchdog);
       try {
         const model = gltf.scene;
         model.traverse((child) => {
@@ -293,44 +362,126 @@ function loadLibraryModel() {
             if (child.material) {
               child.material.roughness = 0.45;
               child.material.metalness = 0.1;
-              child.material.side = THREE.DoubleSide;
             }
+
+            // Room Floor: Elegant warm polished library floor
+            if (child.name === 'Mesh_518') {
+              state.roomArchitecture.floor = child;
+              child.material = new THREE.MeshStandardMaterial({
+                color: 0x3a4253, // Polished deep architectural slate floor
+                roughness: 0.35,
+                metalness: 0.2
+              });
+            }
+
+            // Room Walls: Soft warm architectural off-white
+            if (['Mesh_519', 'Mesh_520', 'Mesh_521', 'Mesh_522', 'Mesh_523'].includes(child.name)) {
+              child.material = new THREE.MeshStandardMaterial({
+                color: 0xdde2ee,
+                roughness: 0.75,
+                metalness: 0.05
+              });
+            }
+
+            // Catalog room architecture meshes for dynamic wall distance scaling
+            if (child.name === 'Mesh_520') state.roomArchitecture.leftWall = child;
+            if (child.name === 'Mesh_521') state.roomArchitecture.rightWall = child;
+            if (child.name === 'Mesh_519') state.roomArchitecture.backWall = child;
+            if (child.name === 'Mesh_522') state.roomArchitecture.frontLeftWall = child;
+            if (child.name === 'Mesh_523') state.roomArchitecture.frontRightWall = child;
           }
         });
+
+        // Ensure half shelf (Right_Row3_Shelf2) is straight and flush with Shelf 1 and Shelf 3
+        const halfShelf = model.getObjectByName('Right_Row3_Shelf2_HALF_SHELF_1Bay_5Rows');
+        if (halfShelf) {
+          halfShelf.position.z = -3.101; // Perfectly straight alignment with Row 3
+        }
 
         scene.add(model);
         console.log('3D Library GLB loaded successfully!');
 
+        // Apply initial room wall distance (from localStorage or recommended 0.80m)
+        const savedDist = parseFloat(localStorage.getItem('smart_library_wall_distance')) || 0.80;
+        updateWallDistance(savedDist, false);
+
         // Populate 3D books on the shelves
-        try {
-          rebuildAll3DBooks();
-        } catch (be) {
-          console.error('rebuildAll3DBooks error:', be);
-        }
+        rebuildAll3DBooks();
       } catch (err) {
-        console.error('Model processing error:', err);
+        console.error('Error during library model post-processing:', err);
       } finally {
-        setTimeout(() => {
-          if (screen) screen.classList.add('hidden');
-        }, 300);
+        setTimeout(hideLoading, 400);
       }
     },
     (xhr) => {
-      if (xhr.lengthComputable && progressBar && loadingStatus) {
+      if (xhr.lengthComputable) {
         const pct = Math.round((xhr.loaded / xhr.total) * 100);
-        progressBar.style.width = pct + '%';
-        loadingStatus.textContent = `ലൈബ്രറി മോഡൽ ലോഡ് ചെയ്യുന്നു (${pct}%)...`;
+        if (progressBar) progressBar.style.width = pct + '%';
+        if (loadingStatus) loadingStatus.textContent = `ലൈബ്രറി മോഡൽ ലോഡ് ചെയ്യുന്നു (${pct}%)...`;
       }
     },
     (err) => {
-      clearTimeout(watchdog);
       console.error('Error loading library.glb:', err);
       if (loadingStatus) loadingStatus.textContent = 'മോഡൽ ലോഡ് ചെയ്യുന്നതിൽ പിശക് സംഭവിച്ചു.';
-      setTimeout(() => {
-        if (screen) screen.classList.add('hidden');
-      }, 1500);
+      setTimeout(hideLoading, 1500);
     }
   );
+}
+
+// ==========================================================================
+// Dynamic Room & Wall Spacing Controller
+// ==========================================================================
+function updateWallDistance(distanceInMeters, persist = true) {
+  const dist = Math.max(0.088, Math.min(5.0, parseFloat(distanceInMeters) || 0.80));
+  state.roomArchitecture.wallDistance = dist;
+
+  const wallX = 6.642 + dist;
+  const scaleRatio = wallX / 6.73;
+  const newFrontWidth = wallX - 0.75;
+  const frontScale = newFrontWidth / 5.98;
+
+  const { leftWall, rightWall, floor, backWall, frontLeftWall, frontRightWall, ceiling } = state.roomArchitecture;
+
+  if (leftWall) leftWall.position.x = -wallX;
+  if (rightWall) rightWall.position.x = wallX;
+  if (floor) floor.scale.x = scaleRatio;
+  if (ceiling) ceiling.scale.x = scaleRatio;
+  if (backWall) backWall.scale.x = scaleRatio;
+  if (frontLeftWall) {
+    frontLeftWall.scale.x = frontScale;
+    frontLeftWall.position.x = -0.75 - newFrontWidth / 2;
+  }
+  if (frontRightWall) {
+    frontRightWall.scale.x = frontScale;
+    frontRightWall.position.x = 0.75 + newFrontWidth / 2;
+  }
+
+  // Update UI display if slider / badge exists
+  const slider = document.getElementById('wall-distance-slider');
+  const valueDisplay = document.getElementById('wall-distance-value');
+  if (slider) slider.value = dist;
+  if (valueDisplay) {
+    const cm = Math.round(dist * 100);
+    valueDisplay.textContent = dist >= 1.0 ? `${dist.toFixed(2)} m (${cm} cm)` : `${cm} cm`;
+  }
+
+  // Highlight active preset button if matched
+  document.querySelectorAll('.preset-dist-btn').forEach(btn => {
+    const bDist = parseFloat(btn.dataset.dist);
+    if (Math.abs(bDist - dist) < 0.03) {
+      btn.style.borderColor = '#3b82f6';
+      btn.style.color = '#38bdf8';
+      btn.style.background = 'rgba(59, 130, 246, 0.2)';
+    } else {
+      btn.style.borderColor = '';
+      btn.style.color = '';
+      btn.style.background = '';
+    }
+  });
+
+  if (persist) {
+    localStorage.setItem('smart_library_wall_distance', dist.toString());
+  }
 }
 
 // ==========================================================================
@@ -576,7 +727,16 @@ function getRackName(rackNum) {
   return names[rackNum] || `റാക്ക് ${rackNum}`;
 }
 
-function computeShelfSlotCoordinates(targetShelf, rackNum, bayNum, slotInBay) {
+function getShelfFaceCategory(shelf, face = 'front') {
+  if (shelf.category_mode === 'split') {
+    return face === 'back' ? (shelf.category_back || shelf.category) : (shelf.category_front || shelf.category);
+  }
+  if (shelf.category) return shelf.category;
+  const cat = state.categories.find(c => c.side === shelf.side && c.rows && c.rows.includes(shelf.row));
+  return cat ? cat.id : null;
+}
+
+function computeShelfSlotCoordinates(targetShelf, rackNum, bayNum, slotInBay, face = 'front') {
   // Center Y heights for 0.24m tall book resting on wooden planks
   const rackLevels = {
     1: 0.202, // Bottom rack (Plank at 0.082)
@@ -586,7 +746,7 @@ function computeShelfSlotCoordinates(targetShelf, rackNum, bayNum, slotInBay) {
     5: 1.724  // Top rack (Plank at 1.604)
   };
 
-  const levelY = rackLevels[rackNum] || 0.965;
+  const levelY = (rackLevels[rackNum] || 0.965) + (targetShelf.is_half ? 0.055 : 0);
   const shelfBaseX = targetShelf.three_pos[0];
   const shelfBaseY = targetShelf.three_pos[1];
   const shelfBaseZ = targetShelf.three_pos[2];
@@ -602,13 +762,15 @@ function computeShelfSlotCoordinates(targetShelf, rackNum, bayNum, slotInBay) {
     offsetX = 0.12 + (slotInBay - 1) * bookWidth;
   }
 
-  // Z position: Back of book rests directly against the horizontal metal rods (കമ്പി) in the middle!
-  // Rod is at Z = shelfBaseZ + 0.040, book depth = 0.18m -> center is at Z = +0.130
-  const zOffset = 0.130;
+  // Z position: Both full shelves and half shelves have their center at Z = -3.101 for Row 3, or shelfBaseZ + 0.279 for other full shelves
+  const isBack = face === 'back';
+  const centerZ = targetShelf.is_half ? shelfBaseZ : (shelfBaseZ + 0.279);
+  const zPos = isBack ? (centerZ - 0.140) : (centerZ + 0.140);
 
   return {
-    position: new THREE.Vector3(shelfBaseX + offsetX, shelfBaseY + levelY, shelfBaseZ + zOffset),
-    rotation: new THREE.Euler(0, 0, 0) // Face 4 (+Z spine) faces outward towards the aisle!
+    position: new THREE.Vector3(shelfBaseX + offsetX, shelfBaseY + levelY, zPos),
+    rotation: new THREE.Euler(0, isBack ? Math.PI : 0, 0), // Front spine faces +Z (0), Back spine faces -Z (Math.PI)
+    face: face
   };
 }
 
@@ -638,60 +800,78 @@ function rebuildAll3DBooks() {
   const rackFillOrder = [3, 2, 1, 4, 5];
   const slotsPerBay = 14;
 
-  // For each category, assign books to that category's shelves
+  // For each category, assign books to that category's shelves (supporting double-sided Front & Back)
   state.categories.forEach(cat => {
-    const catShelves = state.shelves.filter(s => 
-      s.category === cat.id || (s.side === cat.side && cat.rows && cat.rows.includes(s.row))
-    );
-    if (catShelves.length === 0) return;
+    // Find all shelf faces assigned to this category (supporting single or split front/back)
+    const catFaces = [];
+    state.shelves.forEach(s => {
+      if (getShelfFaceCategory(s, 'front') === cat.id) {
+        catFaces.push({ shelf: s, face: 'front' });
+      }
+      if (getShelfFaceCategory(s, 'back') === cat.id) {
+        catFaces.push({ shelf: s, face: 'back' });
+      }
+    });
+
+    if (catFaces.length === 0) return;
 
     const booksInCat = booksByCategory[cat.id] || [];
     let autoIndex = 0;
 
-    // Track occupied slots to prevent collisions: key = `${shelfIdx}_${rack}_${bay}_${slot}`
+    // Track occupied slots to prevent collisions: key = `${shelfName}_${face}_${rack}_${bay}_${slot}`
     const occupied = new Set();
 
     // 1. First pass: Reserve custom-placed books
     booksInCat.forEach(book => {
       if (book.customRack) {
-        const shelfIdx = 0;
+        const face = book.customFace || 'front';
+        const shelfName = book.customShelf || catFaces[0].shelf.name;
         const rack = parseInt(book.customRack) || 3;
         const bay = parseInt(book.customBay) || 1;
         const slot = parseInt(book.customSlot) || 1;
-        occupied.add(`${shelfIdx}_${rack}_${bay}_${slot}`);
+        occupied.add(`${shelfName}_${face}_${rack}_${bay}_${slot}`);
       }
     });
 
     // 2. Second pass: Place all books
     booksInCat.forEach((book) => {
-      let targetShelf = catShelves[0];
+      let targetFaceObj = catFaces[0];
       let rackNum = 3;
       let bayNum = 1;
       let slotInBay = 1;
+      let face = 'front';
 
       if (book.customRack) {
         // User customized position
+        face = book.customFace || 'front';
+        const customShelf = state.shelves.find(s => s.name === book.customShelf);
+        targetFaceObj = {
+          shelf: customShelf || catFaces[0].shelf,
+          face: face
+        };
         rackNum = parseInt(book.customRack) || 3;
         bayNum = parseInt(book.customBay) || 1;
         slotInBay = parseInt(book.customSlot) || 1;
       } else {
         // Auto sequence: Middle (3) -> Lower (2) -> Bottom (1) -> Upper (4) -> Top (5)
-        // Find next unoccupied slot
+        // Find next unoccupied slot across available shelf faces
         let found = false;
         while (!found) {
-          const totalSlotsPerShelf = rackFillOrder.length * (slotsPerBay * 2); // 140 slots per shelf unit
-          const shelfIdx = Math.floor(autoIndex / totalSlotsPerShelf) % catShelves.length;
-          targetShelf = catShelves[shelfIdx];
+          const slotsPerFace = 140; // 5 racks * 28 slots per full shelf face
+          const faceIdx = Math.floor(autoIndex / slotsPerFace) % catFaces.length;
+          targetFaceObj = catFaces[faceIdx];
+          face = targetFaceObj.face;
+          const targetShelf = targetFaceObj.shelf;
 
-          const slotInShelf = autoIndex % totalSlotsPerShelf;
-          const rackStep = Math.floor(slotInShelf / (slotsPerBay * 2)); // 0 to 4
-          rackNum = rackFillOrder[rackStep];
+          const slotInFace = autoIndex % slotsPerFace;
+          const rackStep = Math.floor(slotInFace / (slotsPerBay * 2)); // 0 to 4
+          rackNum = rackFillOrder[rackStep % rackFillOrder.length];
 
-          const slotInRack = slotInShelf % (slotsPerBay * 2); // 0 to 27
-          bayNum = slotInRack < slotsPerBay ? 1 : 2;
-          slotInBay = (slotInRack % slotsPerBay) + 1; // 1 to 14
+          const slotInRack = slotInFace % (slotsPerBay * 2);
+          bayNum = targetShelf.is_half ? 1 : (slotInRack < slotsPerBay ? 1 : 2);
+          slotInBay = (slotInRack % slotsPerBay) + 1;
 
-          const key = `${shelfIdx}_${rackNum}_${bayNum}_${slotInBay}`;
+          const key = `${targetShelf.name}_${face}_${rackNum}_${bayNum}_${slotInBay}`;
           if (!occupied.has(key)) {
             occupied.add(key);
             found = true;
@@ -700,12 +880,15 @@ function rebuildAll3DBooks() {
         }
       }
 
-      const coords = computeShelfSlotCoordinates(targetShelf, rackNum, bayNum, slotInBay);
+      const targetShelf = targetFaceObj.shelf;
+      const coords = computeShelfSlotCoordinates(targetShelf, rackNum, bayNum, slotInBay, face);
 
       const slot = {
         shelfName: targetShelf.name,
         row: targetShelf.row,
         shelfNumber: targetShelf.shelf,
+        face: face,
+        faceName: face === 'front' ? 'മുൻവശം (Front)' : 'പിൻവശം (Back)',
         rack: rackNum,
         rackName: getRackName(rackNum),
         bay: bayNum,
@@ -722,7 +905,7 @@ function rebuildAll3DBooks() {
     });
   });
 
-  console.log(`Placed ${booksGroup.children.length} books in shelves against rods (Middle rack first)!`);
+  console.log(`Placed ${booksGroup.children.length} books in double-sided shelves (Middle rack first)!`);
 }
 
 // ==========================================================================
@@ -750,22 +933,25 @@ function focusOnBook(bookMesh) {
   const banner = document.getElementById('nav-banner');
   const navTitle = document.getElementById('nav-target-title');
   const navCoords = document.getElementById('nav-target-coords');
+  const isBack = slotData.face === 'back' || (bookMesh.rotation && Math.abs(bookMesh.rotation.y) > 1.5);
+  const faceMalayalam = isBack ? 'പിൻവശം (Back Face)' : 'മുൻവശം (Front Face)';
+
   navTitle.textContent = `${bookData.title}`;
-  navCoords.textContent = `${slotData.side === 'left' ? 'ഇടതുഭാഗം' : 'വലതുഭാഗം'} • Row ${slotData.row} • Rack ${slotData.level} ലേക്ക് ക്യാമറ നീങ്ങുന്നു...`;
+  navCoords.textContent = `${slotData.side === 'left' ? 'ഇടതുഭാഗം' : 'വലതുഭാഗം'} • Row ${slotData.row} • ${faceMalayalam} • ${slotData.rackName} ലേക്ക് ക്യാമറ നീങ്ങുന്നു...`;
   banner.style.display = 'flex';
 
   // Target book world position
   const targetPos = bookMesh.userData.originalPosition.clone();
   
   // Camera waypoint path:
-  // 1. Central corridor point (X=0, same Z as aisle)
-  // 2. Aisle in front of the shelf row: aisle is at +Z relative to shelf rack
-  // 3. Right in front of the shelf looking directly at the book and its neighbors
-  const corridorZ = targetPos.z + 1.2;
+  // If Front book (+Z): approach from front aisle at Z = targetPos.z + 1.25
+  // If Back book (-Z): approach from back aisle at Z = targetPos.z - 1.25
+  const zSign = isBack ? -1 : +1;
+  const corridorZ = targetPos.z + zSign * 1.20;
   const aisleCameraPos = new THREE.Vector3(
     targetPos.x, 
     Math.max(targetPos.y, 1.25), 
-    targetPos.z + 1.25
+    targetPos.z + zSign * 1.25
   );
 
   const lookAtTarget = new THREE.Vector3(targetPos.x, targetPos.y, targetPos.z);
@@ -780,12 +966,12 @@ function focusOnBook(bookMesh) {
       controls.enabled = true;
       controls.target.copy(lookAtTarget);
 
-      // Trigger Book Lift & Rotation Interaction from among its neighbors!
+      // Trigger Book Lift & Rotation Interaction from its shelf face!
       animateBookLift(bookMesh);
     }
   });
 
-  // Step 1: Fly along central corridor
+  // Step 1: Fly along central corridor to row entrance
   tl.to(camera.position, {
     x: 0,
     y: 1.6,
@@ -795,7 +981,7 @@ function focusOnBook(bookMesh) {
     onUpdate: () => controls.update()
   });
 
-  // Step 2: Turn into aisle and zoom in directly facing the rack of books
+  // Step 2: Turn into aisle and zoom in directly facing the rack of books from front or back
   tl.to(camera.position, {
     x: aisleCameraPos.x,
     y: aisleCameraPos.y,
@@ -825,6 +1011,8 @@ function animateBookLift(bookMesh) {
 
   const originalPos = bookMesh.userData.originalPosition.clone();
   const originalRot = bookMesh.userData.originalRotation.clone();
+  const isBack = bookMesh.userData.slot.face === 'back' || Math.abs(originalRot.y) > 1.5;
+  const zSign = isBack ? -1 : +1;
 
   // Position book directly in front of camera
   const cameraDir = new THREE.Vector3();
@@ -834,12 +1022,12 @@ function animateBookLift(bookMesh) {
   floatPos.y -= 0.04; // comfortable eye-level reading angle
 
   // Animate book:
-  // Step 1: Slide forward out of row between neighbors (+Z by 0.16m)
-  // Step 2: Elevate upward (+Y by 0.12m)
+  // Step 1: Slide forward out of shelf face into aisle (zSign * 0.16m)
+  // Step 2: Elevate upward (+Y by 0.14m)
   // Step 3: Glide forward to camera lens and rotate to 3D reading view!
   gsap.timeline()
     .to(bookMesh.position, {
-      z: originalPos.z + 0.16, // slide forward from row
+      z: originalPos.z + zSign * 0.16, // slide forward from front or back face into aisle
       duration: 0.35,
       ease: 'power2.out'
     })
@@ -857,7 +1045,7 @@ function animateBookLift(bookMesh) {
     }, '-=0.1')
     .to(bookMesh.rotation, {
       x: 0.05,
-      y: camera.rotation.y + 0.55, // 3D perspective angle showing Cover & Spine
+      y: camera.rotation.y + (isBack ? -0.55 : 0.55), // 3D perspective angle showing Cover & Spine
       z: 0.03,
       duration: 0.75,
       ease: 'power3.out'
@@ -876,6 +1064,8 @@ function putBackBook(resetCamera = true) {
   const bookMesh = state.focusedBookMesh;
   const originalPos = bookMesh.userData.originalPosition;
   const originalRot = bookMesh.userData.originalRotation;
+  const isBack = bookMesh.userData.slot.face === 'back' || Math.abs(originalRot.y) > 1.5;
+  const zSign = isBack ? -1 : +1;
 
   sfx.playSlide();
 
@@ -888,7 +1078,7 @@ function putBackBook(resetCamera = true) {
   .to(bookMesh.position, {
     x: originalPos.x,
     y: originalPos.y + 0.14,
-    z: originalPos.z + 0.16, // position directly above its gap
+    z: originalPos.z + zSign * 0.16, // position directly above its gap
     duration: 0.65,
     ease: 'power2.inOut'
   })
@@ -1024,8 +1214,8 @@ function setupEventListeners() {
   document.getElementById('entrance-cam-btn').addEventListener('click', () => {
     sfx.playClick();
     if (state.focusedBookMesh) putBackBook(false);
-    gsap.to(camera.position, { x: 0, y: 2.0, z: 5.0, duration: 1.5, ease: 'power2.inOut' });
-    gsap.to(controls.target, { x: 0, y: 1.2, z: 0, duration: 1.5, ease: 'power2.inOut' });
+    gsap.to(camera.position, { x: 0, y: 1.55, z: 6.2, duration: 1.5, ease: 'power2.inOut' });
+    gsap.to(controls.target, { x: 0, y: 1.25, z: 0, duration: 1.5, ease: 'power2.inOut' });
   });
 
   document.getElementById('overview-cam-btn').addEventListener('click', () => {
@@ -1192,13 +1382,59 @@ function setupEventListeners() {
     });
   }
 
+  // Category mode radio toggles
+  const modeSingleRadio = document.getElementById('mode-single');
+  const modeSplitRadio = document.getElementById('mode-split');
+  const singleCatWrap = document.getElementById('single-cat-wrap');
+  const splitCatWrap = document.getElementById('split-cat-wrap');
+
+  if (modeSingleRadio && modeSplitRadio) {
+    modeSingleRadio.addEventListener('change', () => {
+      if (singleCatWrap) singleCatWrap.style.display = 'block';
+      if (splitCatWrap) splitCatWrap.style.display = 'none';
+    });
+    modeSplitRadio.addEventListener('change', () => {
+      if (singleCatWrap) singleCatWrap.style.display = 'none';
+      if (splitCatWrap) splitCatWrap.style.display = 'block';
+    });
+  }
+
   const shelfSaveCatBtn = document.getElementById('shelf-save-cat-btn');
   if (shelfSaveCatBtn) {
-    shelfSaveCatBtn.addEventListener('click', () => {
+    shelfSaveCatBtn.addEventListener('click', async () => {
       if (!state.inspectedShelf) return;
       const shelf = state.inspectedShelf;
-      const newCatId = document.getElementById('shelf-quick-cat-select').value;
-      assignCategoryToShelfRow(shelf.side, shelf.row, newCatId);
+      const isSplit = modeSplitRadio && modeSplitRadio.checked;
+
+      const singleCatId = document.getElementById('shelf-quick-cat-select').value;
+      const frontCatId = document.getElementById('shelf-front-cat-select') ? document.getElementById('shelf-front-cat-select').value : singleCatId;
+      const backCatId = document.getElementById('shelf-back-cat-select') ? document.getElementById('shelf-back-cat-select').value : singleCatId;
+
+      shelf.category_mode = isSplit ? 'split' : 'single';
+      shelf.category = singleCatId;
+      shelf.category_front = frontCatId;
+      shelf.category_back = backCatId;
+
+      sfx.playClick();
+
+      try {
+        await fetch('/api/shelves/category', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            shelfName: shelf.name,
+            categoryMode: shelf.category_mode,
+            categoryId: shelf.category,
+            categoryFront: shelf.category_front,
+            categoryBack: shelf.category_back
+          })
+        });
+      } catch (err) {
+        console.warn('Backend update failed:', err);
+      }
+
+      rebuildAll3DBooks();
+      renderShelvesTable();
       document.getElementById('shelf-inspect-card').style.display = 'none';
     });
   }
@@ -1229,6 +1465,50 @@ function setupEventListeners() {
   // Color picker hex update
   document.getElementById('book-color').addEventListener('input', (e) => {
     document.getElementById('color-hex').textContent = e.target.value;
+  });
+
+  // Room & Wall Settings Modal Event Listeners
+  const roomSettingsModal = document.getElementById('room-settings-modal');
+  const roomSettingsBtn = document.getElementById('room-settings-btn');
+  const closeRoomModalBtn = document.getElementById('close-room-modal-btn');
+  const doneRoomModalBtn = document.getElementById('done-room-modal-btn');
+  const wallSlider = document.getElementById('wall-distance-slider');
+
+  if (roomSettingsBtn) {
+    roomSettingsBtn.addEventListener('click', () => {
+      sfx.playClick();
+      if (roomSettingsModal) roomSettingsModal.style.display = 'flex';
+      const curDist = state.roomArchitecture.wallDistance || 0.80;
+      updateWallDistance(curDist, false);
+      lucide.createIcons();
+    });
+  }
+
+  if (closeRoomModalBtn) {
+    closeRoomModalBtn.addEventListener('click', () => {
+      if (roomSettingsModal) roomSettingsModal.style.display = 'none';
+    });
+  }
+
+  if (doneRoomModalBtn) {
+    doneRoomModalBtn.addEventListener('click', () => {
+      sfx.playSuccess();
+      if (roomSettingsModal) roomSettingsModal.style.display = 'none';
+    });
+  }
+
+  if (wallSlider) {
+    wallSlider.addEventListener('input', (e) => {
+      updateWallDistance(parseFloat(e.target.value), true);
+    });
+  }
+
+  document.querySelectorAll('.preset-dist-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      sfx.playClick();
+      const dist = parseFloat(e.currentTarget.dataset.dist);
+      updateWallDistance(dist, true);
+    });
   });
 }
 
@@ -1402,6 +1682,7 @@ function setupShelfInteractionBoxes() {
 function rebuild3DCategorySigns() {
   if (!categorySignsGroup) return;
 
+  // Clear any existing virtual category signs from 3D scene (Disabled as per user request: "mukalilulla virtual category display venda")
   while (categorySignsGroup.children.length > 0) {
     const child = categorySignsGroup.children[0];
     categorySignsGroup.remove(child);
@@ -1411,84 +1692,6 @@ function rebuild3DCategorySigns() {
       child.material.dispose();
     }
   }
-
-  const rowMap = new Map();
-  state.shelves.forEach(s => {
-    const key = `${s.side}_${s.row}`;
-    if (!rowMap.has(key)) {
-      rowMap.set(key, { side: s.side, row: s.row, z: s.three_pos[2], shelves: [] });
-    }
-    rowMap.get(key).shelves.push(s);
-  });
-
-  rowMap.forEach(r => {
-    const catId = r.shelves[0].category || 
-      (state.categories.find(c => c.side === r.side && c.rows && c.rows.includes(r.row)) || {}).id;
-    const cat = state.categories.find(c => c.id === catId);
-    if (!cat) return;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 160;
-    const ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = 'rgba(11, 14, 20, 0.94)';
-    ctx.beginPath();
-    ctx.roundRect(4, 4, 504, 152, 16);
-    ctx.fill();
-
-    ctx.strokeStyle = cat.color || '#3b82f6';
-    ctx.lineWidth = 6;
-    ctx.stroke();
-
-    const sideText = r.side === 'left' ? 'LEFT WING' : 'RIGHT WING';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.beginPath();
-    ctx.roundRect(24, 20, 190, 32, 8);
-    ctx.fill();
-
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = 'bold 18px monospace';
-    ctx.fillText(`${sideText} • ROW ${r.row}`, 36, 42);
-
-    ctx.fillStyle = cat.color || '#3b82f6';
-    ctx.beginPath();
-    ctx.arc(42, 100, 14, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 36px "Segoe UI", sans-serif';
-    ctx.fillText(cat.name.split(' ')[0], 70, 110);
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.minFilter = THREE.LinearFilter;
-
-    const signGeo = new THREE.PlaneGeometry(1.3, 0.42);
-    const signMat = new THREE.MeshStandardMaterial({
-      map: texture,
-      transparent: true,
-      side: THREE.DoubleSide,
-      emissive: new THREE.Color(cat.color || '#3b82f6'),
-      emissiveIntensity: 0.22,
-      roughness: 0.3
-    });
-
-    const signMesh = new THREE.Mesh(signGeo, signMat);
-    const posX = r.side === 'left' ? -1.75 : 1.75;
-    const rotY = r.side === 'left' ? Math.PI / 2 : -Math.PI / 2;
-    signMesh.position.set(posX, 2.42, r.z);
-    signMesh.rotation.set(0, rotY, 0);
-
-    signMesh.userData = {
-      isSign: true,
-      side: r.side,
-      row: r.row,
-      z: r.z,
-      category: cat
-    };
-
-    categorySignsGroup.add(signMesh);
-  });
 }
 
 // ==========================================================================
@@ -1503,20 +1706,45 @@ function openShelfInspectCard(shelf) {
   const subtitle = document.getElementById('shelf-inspect-subtitle');
   const currentBadge = document.getElementById('shelf-current-cat-badge');
   const quickSelect = document.getElementById('shelf-quick-cat-select');
+  const frontSelect = document.getElementById('shelf-front-cat-select');
+  const backSelect = document.getElementById('shelf-back-cat-select');
   const countEl = document.getElementById('shelf-books-count');
+  const singleRadio = document.getElementById('mode-single');
+  const splitRadio = document.getElementById('mode-split');
+  const singleWrap = document.getElementById('single-cat-wrap');
+  const splitWrap = document.getElementById('split-cat-wrap');
 
   const sideLabel = shelf.side === 'left' ? 'ഇടതുഭാഗം (Left Wing)' : 'വലതുഭാഗം (Right Wing)';
   title.textContent = `${sideLabel} - Row ${shelf.row}`;
   subtitle.textContent = `ഷെൽഫ്: ${shelf.name}`;
 
-  const cat = state.categories.find(c => c.id === shelf.category) || 
-              state.categories.find(c => c.side === shelf.side && c.rows && c.rows.includes(shelf.row));
-  
-  if (cat) {
-    currentBadge.textContent = cat.name.split(' ')[0];
-    currentBadge.style.color = cat.color;
-    currentBadge.style.borderColor = cat.color;
-    currentBadge.style.background = `${cat.color}22`;
+  const isSplit = shelf.category_mode === 'split';
+  if (singleRadio) singleRadio.checked = !isSplit;
+  if (splitRadio) splitRadio.checked = isSplit;
+  if (singleWrap) singleWrap.style.display = isSplit ? 'none' : 'block';
+  if (splitWrap) splitWrap.style.display = isSplit ? 'block' : 'none';
+
+  const defaultCat = state.categories.find(c => c.side === shelf.side && c.rows && c.rows.includes(shelf.row));
+  const defaultCatId = defaultCat ? defaultCat.id : (state.categories[0] ? state.categories[0].id : '');
+
+  const singleCatId = shelf.category || defaultCatId;
+  const frontCatId = shelf.category_front || shelf.category || defaultCatId;
+  const backCatId = shelf.category_back || shelf.category || defaultCatId;
+
+  const currentCat = state.categories.find(c => c.id === singleCatId);
+  const frontCat = state.categories.find(c => c.id === frontCatId);
+  const backCat = state.categories.find(c => c.id === backCatId);
+
+  if (isSplit) {
+    currentBadge.textContent = `${(frontCat ? frontCat.name : '').split(' ')[0]} / ${(backCat ? backCat.name : '').split(' ')[0]}`;
+    currentBadge.style.color = '#38bdf8';
+    currentBadge.style.borderColor = '#38bdf8';
+    currentBadge.style.background = 'rgba(56, 189, 248, 0.15)';
+  } else if (currentCat) {
+    currentBadge.textContent = currentCat.name.split(' ')[0];
+    currentBadge.style.color = currentCat.color;
+    currentBadge.style.borderColor = currentCat.color;
+    currentBadge.style.background = `${currentCat.color}22`;
   } else {
     currentBadge.textContent = 'കാറ്റഗറി നിശ്ചയിച്ചിട്ടില്ല';
     currentBadge.style.color = '#fff';
@@ -1524,12 +1752,24 @@ function openShelfInspectCard(shelf) {
     currentBadge.style.background = 'transparent';
   }
 
-  quickSelect.innerHTML = state.categories.map(c => {
-    const isSelected = cat && c.id === cat.id ? 'selected' : '';
-    return `<option value="${c.id}" ${isSelected}>${c.name}</option>`;
-  }).join('');
+  const optionsHtml = state.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  if (quickSelect) {
+    quickSelect.innerHTML = optionsHtml;
+    quickSelect.value = singleCatId;
+  }
+  if (frontSelect) {
+    frontSelect.innerHTML = optionsHtml;
+    frontSelect.value = frontCatId;
+  }
+  if (backSelect) {
+    backSelect.innerHTML = optionsHtml;
+    backSelect.value = backCatId;
+  }
 
-  const booksOnShelf = state.books.filter(b => b.category === (cat ? cat.id : ''));
+  const booksOnShelf = state.books.filter(b => {
+    return b.customShelf === shelf.name || 
+           (!b.customShelf && (b.category === singleCatId || (isSplit && (b.category === frontCatId || b.category === backCatId))));
+  });
   countEl.textContent = `${booksOnShelf.length} പുസ്തകങ്ങൾ`;
 
   card.style.display = 'block';
@@ -1789,7 +2029,8 @@ function showBookInspectCard(book, slot) {
   document.getElementById('inspect-desc').textContent = book.description || 'വിവരണം ലഭ്യമല്ല.';
 
   const sideMalayalam = slot.side === 'left' ? 'ഇടതുഭാഗം' : 'വലതുഭാഗം';
-  document.getElementById('inspect-location').textContent = `${sideMalayalam} • Row ${slot.row} • ${slot.rackName} • ${slot.bayName} • സ്ലോട്ട് ${slot.slotInBay} (കമ്പിയുടെ മുന്നിൽ)`;
+  const faceMalayalam = slot.face === 'back' ? 'പിൻവശം (Back Face)' : 'മുൻവശം (Front Face)';
+  document.getElementById('inspect-location').textContent = `${sideMalayalam} • Row ${slot.row} • ${faceMalayalam} • ${slot.rackName} • ${slot.bayName} • സ്ലോട്ട് ${slot.slotInBay}`;
 
   const badge = document.getElementById('inspect-cover-badge');
   badge.style.background = book.color || '#1e3a8a';
@@ -1815,10 +2056,13 @@ function openEditLocationModal(bookId) {
   document.getElementById('edit-book-id').value = book.id;
   document.getElementById('edit-modal-book-title').textContent = `"${book.title}" (${book.author})`;
 
+  const faceVal = book.customFace || (slot ? slot.face : 'front');
   const rackVal = book.customRack || (slot ? slot.rack : 3);
   const bayVal = book.customBay || (slot ? slot.bay : 1);
   const slotVal = book.customSlot || (slot ? slot.slotInBay : 1);
 
+  const faceEl = document.getElementById('edit-book-face');
+  if (faceEl) faceEl.value = faceVal;
   document.getElementById('edit-book-rack').value = String(rackVal);
   document.getElementById('edit-book-bay').value = String(bayVal);
   document.getElementById('edit-book-slot').value = String(slotVal);
@@ -1830,6 +2074,7 @@ function openEditLocationModal(bookId) {
 async function onEditLocationSubmit(e) {
   e.preventDefault();
   const bookId = document.getElementById('edit-book-id').value;
+  const face = document.getElementById('edit-book-face') ? document.getElementById('edit-book-face').value : 'front';
   const rack = parseInt(document.getElementById('edit-book-rack').value, 10);
   const bay = parseInt(document.getElementById('edit-book-bay').value, 10);
   const slot = parseInt(document.getElementById('edit-book-slot').value, 10);
@@ -1837,6 +2082,7 @@ async function onEditLocationSubmit(e) {
   const book = state.books.find(b => b.id === bookId);
   if (!book) return;
 
+  book.customFace = face;
   book.customRack = rack;
   book.customBay = bay;
   book.customSlot = slot;
@@ -1845,7 +2091,7 @@ async function onEditLocationSubmit(e) {
     await fetch(`/api/books/${bookId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customRack: rack, customBay: bay, customSlot: slot })
+      body: JSON.stringify({ customFace: face, customRack: rack, customBay: bay, customSlot: slot })
     });
   } catch (err) {
     console.warn('Backend update failed, kept in local state:', err);
@@ -1886,6 +2132,7 @@ async function onAddBookSubmit(e) {
   const year = document.getElementById('book-year').value.trim();
   const description = document.getElementById('book-desc').value.trim();
 
+  const customFace = document.getElementById('book-face') ? document.getElementById('book-face').value : 'auto';
   const customRack = document.getElementById('book-rack').value;
   const customBay = document.getElementById('book-bay').value;
   const customSlot = document.getElementById('book-slot').value;
@@ -1901,6 +2148,7 @@ async function onAddBookSubmit(e) {
     description: description || 'സ്മാർട്ട് ലൈബ്രറിയിൽ പുതിയതായി ചേർത്ത ബുക്ക്.'
   };
 
+  if (customFace !== 'auto') newBook.customFace = customFace;
   if (customRack !== 'auto') newBook.customRack = parseInt(customRack, 10);
   if (customBay !== 'auto') newBook.customBay = parseInt(customBay, 10);
   if (customSlot !== 'auto') newBook.customSlot = parseInt(customSlot, 10);
@@ -2019,8 +2267,6 @@ function updateTotalBooksBadge() {
 function animate() {
   requestAnimationFrame(animate);
 
-  if (!renderer || !scene || !camera) return;
-
   if (controls && controls.enabled) {
     controls.update();
   }
@@ -2035,15 +2281,7 @@ function animate() {
 }
 
 // Start application
-function startApp() {
+window.addEventListener('DOMContentLoaded', () => {
   init();
-  if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
-    try { lucide.createIcons(); } catch (e) {}
-  }
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startApp);
-} else {
-  startApp();
-}
+  lucide.createIcons();
+});
