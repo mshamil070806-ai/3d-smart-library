@@ -149,27 +149,30 @@ async function init() {
     console.error('setupEventListeners error:', err);
   }
 
-  if (!threeOk) {
-    console.warn('Three.js failed to initialize renderer. Stopping 3D asset pipeline.');
-    return;
-  }
-
   try {
     await loadLayoutAndBooks();
   } catch (err) {
     console.error('loadLayoutAndBooks error:', err);
   }
 
-  try {
-    loadLibraryModel();
-  } catch (err) {
-    console.error('loadLibraryModel error:', err);
-  }
+  if (threeOk) {
+    try {
+      loadLibraryModel();
+    } catch (err) {
+      console.error('loadLibraryModel error:', err);
+    }
 
-  try {
-    animate();
-  } catch (err) {
-    console.error('animate error:', err);
+    try {
+      animate();
+    } catch (err) {
+      console.error('animate error:', err);
+    }
+  } else {
+    // Zero-GPU Safe Fallback: Render full interactive 2D floor plan directly!
+    console.log('Zero-GPU Fallback Active: Rendering interactive 2D Library Plan.');
+    render2DLibraryPlan();
+    const screen = document.getElementById('loading-screen');
+    if (screen) screen.classList.add('hidden');
   }
 }
 
@@ -207,7 +210,7 @@ function createRobustRenderer(container) {
 
     for (const ctxType of ['webgl2', 'webgl', 'experimental-webgl']) {
       try {
-        const gl = canvas.getContext(ctxType, { alpha: false, depth: true, antialias: false });
+        const gl = canvas.getContext(ctxType, { alpha: false, depth: true, antialias: false, failIfMajorPerformanceCaveat: false });
         if (gl) {
           const r3 = new THREE.WebGLRenderer({ canvas: canvas, context: gl, antialias: false });
           if (r3) {
@@ -222,6 +225,108 @@ function createRobustRenderer(container) {
   }
 
   return null;
+}
+
+function render2DLibraryPlan() {
+  const container = document.getElementById('canvas-container');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="plan-2d-wrapper" style="position: absolute; inset: 0; padding: 100px 24px 60px; overflow-y: auto; background: radial-gradient(circle at center, #171d2c 0%, #090b10 100%); display: flex; flex-direction: column; align-items: center; z-index: 2;">
+      <div style="background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; max-width: 960px; width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,0.35);">
+        <span style="font-size: 1.6rem;">💡</span>
+        <div style="flex: 1;">
+          <div style="font-weight: 700; color: #38bdf8; font-size: 0.95rem;">2D ഇന്ററാക്ടീവ് പ്ലാൻ മോഡ് (Zero-GPU Safe Mode)</div>
+          <div style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.5;">നിങ്ങളുടെ ബ്രൗസറിൽ ഗ്രാഫിക്സ് കാർഡ് (GPU) ഇല്ലാതെയും ലൈബ്രറി 100% പ്രവർത്തിക്കുന്നു. ഏത് ഷെൽഫിലും ക്ലിക്ക് ചെയ്ത് റാക്കുകളിലെ പുസ്തകങ്ങൾ കാണാം. 3D മോഡിൽ കാണാൻ <b>run_library.bat</b> ഡബിൾ ക്ലിക്ക് ചെയ്യുക.</div>
+        </div>
+      </div>
+
+      <div style="max-width: 1000px; width: 100%; display: grid; grid-template-columns: 1fr 60px 1fr; gap: 20px; align-items: start;">
+        <!-- Left Wing Shelves (Rows 1 to 9) -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="text-align: center; font-weight: 700; color: #a5b4fc; font-size: 0.88rem; padding: 8px; background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.25); border-radius: 8px;">
+            ⬅️ ഇടതുഭാഗം (Left Wing - Rows 1-9)
+          </div>
+          <div id="plan-left-rows" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
+
+        <!-- Center Corridor (നടപ്പാത) -->
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 600px; border-left: 2px dashed rgba(255,255,255,0.1); border-right: 2px dashed rgba(255,255,255,0.1); padding: 20px 0;">
+          <span style="writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 6px; font-size: 0.75rem; color: #64748b; font-weight: 600;">നടപ്പാത (MAIN CORRIDOR)</span>
+        </div>
+
+        <!-- Right Wing Shelves (Rows 1 to 9) -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <div style="text-align: center; font-weight: 700; color: #a5b4fc; font-size: 0.88rem; padding: 8px; background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.25); border-radius: 8px;">
+            വലതുഭാഗം (Right Wing - Rows 1-9) ➡️
+          </div>
+          <div id="plan-right-rows" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const leftContainer = document.getElementById('plan-left-rows');
+  const rightContainer = document.getElementById('plan-right-rows');
+
+  for (let r = 1; r <= 9; r++) {
+    const leftShelves = state.shelves.filter(s => s.side === 'left' && s.row === r);
+    const rightShelves = state.shelves.filter(s => s.side === 'right' && s.row === r);
+
+    if (leftContainer && leftShelves.length > 0) {
+      leftContainer.appendChild(createPlanRowElement(r, 'left', leftShelves));
+    }
+    if (rightContainer && rightShelves.length > 0) {
+      rightContainer.appendChild(createPlanRowElement(r, 'right', rightShelves));
+    }
+  }
+}
+
+function createPlanRowElement(rowNum, side, shelves) {
+  const rowDiv = document.createElement('div');
+  rowDiv.style.cssText = 'background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px;';
+  
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size: 0.75rem; color: #94a3b8; font-weight: 600; display: flex; justify-content: space-between;';
+  title.innerHTML = `<span>റോ ${rowNum}</span><span style="color:#64748b;">${shelves.length} ഷെൽഫുകൾ</span>`;
+  rowDiv.appendChild(title);
+
+  const shelvesContainer = document.createElement('div');
+  shelvesContainer.style.cssText = 'display: grid; grid-template-columns: repeat(' + shelves.length + ', 1fr); gap: 6px;';
+
+  shelves.forEach(shelf => {
+    const shelfBtn = document.createElement('div');
+    shelfBtn.style.cssText = 'background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4px;';
+    shelfBtn.onmouseenter = () => { shelfBtn.style.borderColor = '#38bdf8'; shelfBtn.style.background = 'rgba(56, 189, 248, 0.15)'; };
+    shelfBtn.onmouseleave = () => { shelfBtn.style.borderColor = 'rgba(255,255,255,0.1)'; shelfBtn.style.background = 'rgba(30, 41, 59, 0.8)'; };
+    
+    // Count books on this shelf
+    const bookCount = state.books.filter(b => b.customShelf === shelf.name || (!b.customShelf && b.category === shelf.category)).length;
+
+    const catObj = state.categories.find(c => c.id === shelf.category) || {};
+    const catColor = catObj.color || '#3b82f6';
+
+    shelfBtn.innerHTML = `
+      <div style="font-weight: 700; font-size: 0.8rem; color: #f8fafc; display: flex; align-items: center; justify-content: space-between;">
+        <span>ഷെൽഫ് ${shelf.shelf}</span>
+        <span style="font-size: 0.7rem; color: #38bdf8; background: rgba(56,189,248,0.15); padding: 1px 6px; border-radius: 4px;">${bookCount} ബുക്സ്</span>
+      </div>
+      <div style="font-size: 0.72rem; color: ${catColor}; display: flex; align-items: center; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <span style="width: 6px; height: 6px; border-radius: 50%; background: ${catColor}; display: inline-block;"></span>
+        ${catObj.name || 'ജനറൽ'}
+      </div>
+    `;
+
+    shelfBtn.addEventListener('click', () => {
+      openShelfInspectCard(shelf);
+      sfx.playClick();
+    });
+
+    shelvesContainer.appendChild(shelfBtn);
+  });
+
+  rowDiv.appendChild(shelvesContainer);
+  return rowDiv;
 }
 
 function initThree() {
@@ -240,8 +345,7 @@ function initThree() {
   // Renderer with multi-strategy fallback
   renderer = createRobustRenderer(container);
   if (!renderer) {
-    console.error('Fatal: WebGL context could not be created on this system.');
-    showLoadingError('നിങ്ങളുടെ ബ്രൗസറിൽ WebGL / Graphics സപ്പോർട്ട് താൽക്കാലികമായി ലഭ്യമല്ല. ദയവായി പേജ് റീഫ്രഷ് ചെയ്യുകയോ അല്ലെങ്കിൽ Settings -> System -> "Use graphics acceleration when available" ഓൺ ചെയ്യുകയോ ചെയ്യുക.');
+    console.warn('WebGL context could not be created. Falling back to Zero-GPU 2D interactive mode.');
     return false;
   }
 
