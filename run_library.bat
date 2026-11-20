@@ -22,13 +22,15 @@ if not exist "%BROWSER_EXE%" set "BROWSER_EXE=C:\Program Files (x86)\Google\Chro
 if not exist "%BROWSER_EXE%" set "BROWSER_EXE=C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 if not exist "%BROWSER_EXE%" set "BROWSER_EXE=C:\Program Files\Microsoft\Edge\Application\msedge.exe"
 
+set "BROWSER_FLAGS=--user-data-dir="%TEMP%\smart_library_profile" --ignore-gpu-blocklist --enable-webgl --disable-gpu-watchdog"
+
 echo Checking server status on port 5050...
 powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:5050/api/books' -TimeoutSec 2 -UseBasicParsing; exit 0 } catch { exit 1 }"
 if %ERRORLEVEL% EQU 0 (
     echo Server is ALREADY active on port 5050!
     echo Opening browser with GPU-free CPU flags at http://localhost:5050 ...
     if exist "%BROWSER_EXE%" (
-        start "" "%BROWSER_EXE%" --ignore-gpu-blocklist --enable-webgl --disable-gpu-watchdog http://localhost:5050
+        start "" "%BROWSER_EXE%" %BROWSER_FLAGS% http://localhost:5050
     ) else (
         start http://localhost:5050
     )
@@ -43,7 +45,7 @@ powershell -Command "for ($i=0; $i -lt 12; $i++) { try { $r = Invoke-WebRequest 
 
 echo Opening browser with GPU-free CPU flags at http://localhost:5050 ...
 if exist "%BROWSER_EXE%" (
-    start "" "%BROWSER_EXE%" --ignore-gpu-blocklist --enable-webgl --disable-gpu-watchdog http://localhost:5050
+    start "" "%BROWSER_EXE%" %BROWSER_FLAGS% http://localhost:5050
 ) else (
     start http://localhost:5050
 )

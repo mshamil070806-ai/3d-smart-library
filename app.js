@@ -136,6 +136,7 @@ function addSafeListener(id, event, handler) {
 async function init() {
   console.log('3D Smart Library initializing...');
   
+  // 1. Initialize 3D Engine & Scene first
   let threeOk = false;
   try {
     threeOk = initThree();
@@ -143,18 +144,21 @@ async function init() {
     console.error('initThree error:', err);
   }
 
+  // 2. Setup safe UI listeners
   try {
     setupEventListeners();
   } catch (err) {
     console.error('setupEventListeners error:', err);
   }
 
+  // 3. Load layout and book records
   try {
     await loadLayoutAndBooks();
   } catch (err) {
     console.error('loadLayoutAndBooks error:', err);
   }
 
+  // 4. Load 3D model and start rendering loop
   if (threeOk) {
     try {
       loadLibraryModel();
@@ -167,19 +171,13 @@ async function init() {
     } catch (err) {
       console.error('animate error:', err);
     }
-  } else {
-    // Zero-GPU Safe Fallback: Render full interactive 2D floor plan directly!
-    console.log('Zero-GPU Fallback Active: Rendering interactive 2D Library Plan.');
-    render2DLibraryPlan();
-    const screen = document.getElementById('loading-screen');
-    if (screen) screen.classList.add('hidden');
   }
 }
 
 function createRobustRenderer(container) {
-  // Strategy 1: Standard Three.js WebGLRenderer
+  // Strategy 1: Standard Three.js WebGLRenderer with high-performance / default
   try {
-    const r1 = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    const r1 = new THREE.WebGLRenderer({ antialias: true, alpha: false, failIfMajorPerformanceCaveat: false });
     if (r1 && r1.getContext()) {
       container.appendChild(r1.domElement);
       return r1;
@@ -206,7 +204,6 @@ function createRobustRenderer(container) {
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     canvas.style.display = 'block';
-    container.appendChild(canvas);
 
     for (const ctxType of ['webgl2', 'webgl', 'experimental-webgl']) {
       try {
@@ -214,6 +211,7 @@ function createRobustRenderer(container) {
         if (gl) {
           const r3 = new THREE.WebGLRenderer({ canvas: canvas, context: gl, antialias: false });
           if (r3) {
+            container.appendChild(canvas);
             console.log(`Strategy 3: Acquired ${ctxType} context directly!`);
             return r3;
           }
@@ -225,108 +223,6 @@ function createRobustRenderer(container) {
   }
 
   return null;
-}
-
-function render2DLibraryPlan() {
-  const container = document.getElementById('canvas-container');
-  if (!container) return;
-
-  container.innerHTML = `
-    <div class="plan-2d-wrapper" style="position: absolute; inset: 0; padding: 100px 24px 60px; overflow-y: auto; background: radial-gradient(circle at center, #171d2c 0%, #090b10 100%); display: flex; flex-direction: column; align-items: center; z-index: 2;">
-      <div style="background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; max-width: 960px; width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,0.35);">
-        <span style="font-size: 1.6rem;">💡</span>
-        <div style="flex: 1;">
-          <div style="font-weight: 700; color: #38bdf8; font-size: 0.95rem;">2D ഇന്ററാക്ടീവ് പ്ലാൻ മോഡ് (Zero-GPU Safe Mode)</div>
-          <div style="font-size: 0.84rem; color: #cbd5e1; line-height: 1.5;">നിങ്ങളുടെ ബ്രൗസറിൽ ഗ്രാഫിക്സ് കാർഡ് (GPU) ഇല്ലാതെയും ലൈബ്രറി 100% പ്രവർത്തിക്കുന്നു. ഏത് ഷെൽഫിലും ക്ലിക്ക് ചെയ്ത് റാക്കുകളിലെ പുസ്തകങ്ങൾ കാണാം. 3D മോഡിൽ കാണാൻ <b>run_library.bat</b> ഡബിൾ ക്ലിക്ക് ചെയ്യുക.</div>
-        </div>
-      </div>
-
-      <div style="max-width: 1000px; width: 100%; display: grid; grid-template-columns: 1fr 60px 1fr; gap: 20px; align-items: start;">
-        <!-- Left Wing Shelves (Rows 1 to 9) -->
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-          <div style="text-align: center; font-weight: 700; color: #a5b4fc; font-size: 0.88rem; padding: 8px; background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.25); border-radius: 8px;">
-            ⬅️ ഇടതുഭാഗം (Left Wing - Rows 1-9)
-          </div>
-          <div id="plan-left-rows" style="display: flex; flex-direction: column; gap: 10px;"></div>
-        </div>
-
-        <!-- Center Corridor (നടപ്പാത) -->
-        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 600px; border-left: 2px dashed rgba(255,255,255,0.1); border-right: 2px dashed rgba(255,255,255,0.1); padding: 20px 0;">
-          <span style="writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 6px; font-size: 0.75rem; color: #64748b; font-weight: 600;">നടപ്പാത (MAIN CORRIDOR)</span>
-        </div>
-
-        <!-- Right Wing Shelves (Rows 1 to 9) -->
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-          <div style="text-align: center; font-weight: 700; color: #a5b4fc; font-size: 0.88rem; padding: 8px; background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.25); border-radius: 8px;">
-            വലതുഭാഗം (Right Wing - Rows 1-9) ➡️
-          </div>
-          <div id="plan-right-rows" style="display: flex; flex-direction: column; gap: 10px;"></div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  const leftContainer = document.getElementById('plan-left-rows');
-  const rightContainer = document.getElementById('plan-right-rows');
-
-  for (let r = 1; r <= 9; r++) {
-    const leftShelves = state.shelves.filter(s => s.side === 'left' && s.row === r);
-    const rightShelves = state.shelves.filter(s => s.side === 'right' && s.row === r);
-
-    if (leftContainer && leftShelves.length > 0) {
-      leftContainer.appendChild(createPlanRowElement(r, 'left', leftShelves));
-    }
-    if (rightContainer && rightShelves.length > 0) {
-      rightContainer.appendChild(createPlanRowElement(r, 'right', rightShelves));
-    }
-  }
-}
-
-function createPlanRowElement(rowNum, side, shelves) {
-  const rowDiv = document.createElement('div');
-  rowDiv.style.cssText = 'background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px;';
-  
-  const title = document.createElement('div');
-  title.style.cssText = 'font-size: 0.75rem; color: #94a3b8; font-weight: 600; display: flex; justify-content: space-between;';
-  title.innerHTML = `<span>റോ ${rowNum}</span><span style="color:#64748b;">${shelves.length} ഷെൽഫുകൾ</span>`;
-  rowDiv.appendChild(title);
-
-  const shelvesContainer = document.createElement('div');
-  shelvesContainer.style.cssText = 'display: grid; grid-template-columns: repeat(' + shelves.length + ', 1fr); gap: 6px;';
-
-  shelves.forEach(shelf => {
-    const shelfBtn = document.createElement('div');
-    shelfBtn.style.cssText = 'background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; gap: 4px;';
-    shelfBtn.onmouseenter = () => { shelfBtn.style.borderColor = '#38bdf8'; shelfBtn.style.background = 'rgba(56, 189, 248, 0.15)'; };
-    shelfBtn.onmouseleave = () => { shelfBtn.style.borderColor = 'rgba(255,255,255,0.1)'; shelfBtn.style.background = 'rgba(30, 41, 59, 0.8)'; };
-    
-    // Count books on this shelf
-    const bookCount = state.books.filter(b => b.customShelf === shelf.name || (!b.customShelf && b.category === shelf.category)).length;
-
-    const catObj = state.categories.find(c => c.id === shelf.category) || {};
-    const catColor = catObj.color || '#3b82f6';
-
-    shelfBtn.innerHTML = `
-      <div style="font-weight: 700; font-size: 0.8rem; color: #f8fafc; display: flex; align-items: center; justify-content: space-between;">
-        <span>ഷെൽഫ് ${shelf.shelf}</span>
-        <span style="font-size: 0.7rem; color: #38bdf8; background: rgba(56,189,248,0.15); padding: 1px 6px; border-radius: 4px;">${bookCount} ബുക്സ്</span>
-      </div>
-      <div style="font-size: 0.72rem; color: ${catColor}; display: flex; align-items: center; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-        <span style="width: 6px; height: 6px; border-radius: 50%; background: ${catColor}; display: inline-block;"></span>
-        ${catObj.name || 'ജനറൽ'}
-      </div>
-    `;
-
-    shelfBtn.addEventListener('click', () => {
-      openShelfInspectCard(shelf);
-      sfx.playClick();
-    });
-
-    shelvesContainer.appendChild(shelfBtn);
-  });
-
-  rowDiv.appendChild(shelvesContainer);
-  return rowDiv;
 }
 
 function initThree() {
@@ -342,10 +238,36 @@ function initThree() {
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 80);
   camera.position.set(0, 1.55, 6.2);
 
+  // Group to hold all dynamic 3D books
+  if (!booksGroup) booksGroup = new THREE.Group();
+  booksGroup.name = 'BooksGroup';
+  if (!scene.getObjectByName('BooksGroup')) scene.add(booksGroup);
+
+  // Group to hold 3D floating illuminated category signs
+  if (!categorySignsGroup) categorySignsGroup = new THREE.Group();
+  categorySignsGroup.name = 'CategorySignsGroup';
+  if (!scene.getObjectByName('CategorySignsGroup')) scene.add(categorySignsGroup);
+
+  // Group for shelf direct click interactions
+  if (!shelvesInteractionGroup) shelvesInteractionGroup = new THREE.Group();
+  shelvesInteractionGroup.name = 'ShelvesInteractionGroup';
+  if (!scene.getObjectByName('ShelvesInteractionGroup')) scene.add(shelvesInteractionGroup);
+
+  // Architectural modern ceiling with LED light panels
+  createArchitecturalCeiling();
+
+  // Lighting
+  setupLighting();
+
+  // Raycaster for clicking books in 3D
+  raycaster = new THREE.Raycaster();
+  mouse = new THREE.Vector2();
+
   // Renderer with multi-strategy fallback
   renderer = createRobustRenderer(container);
   if (!renderer) {
-    console.warn('WebGL context could not be created. Falling back to Zero-GPU 2D interactive mode.');
+    console.error('WebGL context could not be created on this browser session.');
+    showLoadingError('നിങ്ങളുടെ ബ്രൗസറിൽ 3D ഗ്രാഫിക്സ് (WebGL) താൽക്കാലികമായി ലഭ്യമല്ല. 3D ലൈബ്രറി തുറക്കാൻ പ്രോജക്ട് ഫോൾഡറിലെ <b>run_library.bat</b> ഡബിൾ ക്ലിക്ക് ചെയ്യുക (അല്ലെങ്കിൽ ബ്രൗസർ സെറ്റിംഗ്സിൽ "Use graphics acceleration when available" ഓൺ ചെയ്യുക).');
     return false;
   }
 
@@ -374,25 +296,9 @@ function initThree() {
   window.renderer = renderer;
   window.controls = controls;
   window.state = state;
-
-  // Group to hold all dynamic 3D books
-  if (!scene.getObjectByName('BooksGroup')) scene.add(booksGroup);
-
-  // Group to hold 3D floating illuminated category signs
-  if (!scene.getObjectByName('CategorySignsGroup')) scene.add(categorySignsGroup);
-
-  // Group for shelf direct click interactions
-  if (!scene.getObjectByName('ShelvesInteractionGroup')) scene.add(shelvesInteractionGroup);
-
-  // Architectural modern ceiling with LED light panels
-  createArchitecturalCeiling();
-
-  // Lighting
-  setupLighting();
-
-  // Raycaster for clicking books in 3D
-  raycaster = new THREE.Raycaster();
-  mouse = new THREE.Vector2();
+  window.booksGroup = booksGroup;
+  window.categorySignsGroup = categorySignsGroup;
+  window.shelvesInteractionGroup = shelvesInteractionGroup;
 
   window.addEventListener('resize', onWindowResize);
   renderer.domElement.addEventListener('click', onCanvasClick);
@@ -1013,8 +919,20 @@ function computeShelfSlotCoordinates(targetShelf, rackNum, bayNum, slotInBay, fa
   };
 }
 
+function findBookMesh(predicate) {
+  if (!booksGroup || !booksGroup.children) return null;
+  return booksGroup.children.find(predicate) || null;
+}
+
 function rebuildAll3DBooks() {
-  if (!booksGroup || !booksGroup.children) return;
+  if (!booksGroup || !booksGroup.children) {
+    booksGroup = new THREE.Group();
+    booksGroup.name = 'BooksGroup';
+  }
+  if (scene && !scene.getObjectByName('BooksGroup')) {
+    scene.add(booksGroup);
+  }
+
   // Clear existing books from 3D scene
   while (booksGroup.children.length > 0) {
     const obj = booksGroup.children[0];
@@ -1372,8 +1290,10 @@ function onCanvasClick(event) {
 
   raycaster.setFromCamera(mouse, camera);
 
+  if (!raycaster || !camera) return;
+
   // 1. Check if a 3D book was clicked
-  const bookIntersects = raycaster.intersectObjects(booksGroup.children);
+  const bookIntersects = (booksGroup && booksGroup.children) ? raycaster.intersectObjects(booksGroup.children) : [];
   if (bookIntersects.length > 0) {
     const clickedMesh = bookIntersects[0].object;
     if (clickedMesh.userData && clickedMesh.userData.isBook) {
@@ -1384,7 +1304,7 @@ function onCanvasClick(event) {
   }
 
   // 2. Check if a 3D category signboard was clicked
-  if (categorySignsGroup) {
+  if (categorySignsGroup && categorySignsGroup.children) {
     const signIntersects = raycaster.intersectObjects(categorySignsGroup.children, true);
     if (signIntersects.length > 0) {
       const hit = signIntersects[0].object;
@@ -1392,15 +1312,15 @@ function onCanvasClick(event) {
       if (data && data.isSign) {
         sfx.playClick();
         const targetX = data.side === 'left' ? -2.2 : 2.2;
-        gsap.to(camera.position, { x: 0, y: 1.6, z: data.z, duration: 1.3, ease: 'power2.inOut' });
-        gsap.to(controls.target, { x: targetX, y: 1.1, z: data.z, duration: 1.5, ease: 'power2.inOut' });
+        if (camera) gsap.to(camera.position, { x: 0, y: 1.6, z: data.z, duration: 1.3, ease: 'power2.inOut' });
+        if (controls && controls.target) gsap.to(controls.target, { x: targetX, y: 1.1, z: data.z, duration: 1.5, ease: 'power2.inOut' });
         return;
       }
     }
   }
 
   // 3. Check if a shelf unit was clicked
-  if (shelvesInteractionGroup) {
+  if (shelvesInteractionGroup && shelvesInteractionGroup.children) {
     const shelfIntersects = raycaster.intersectObjects(shelvesInteractionGroup.children);
     if (shelfIntersects.length > 0) {
       const shelfBox = shelfIntersects[0].object;
@@ -1802,7 +1722,7 @@ function performSearch(query) {
     resultsList.querySelectorAll('.search-item').forEach(item => {
       item.addEventListener('click', () => {
         const bookId = item.dataset.id;
-        const targetMesh = booksGroup.children.find(m => m.userData.book.id === bookId);
+        const targetMesh = findBookMesh(m => m.userData && m.userData.book && m.userData.book.id === bookId);
         if (targetMesh) {
           searchDropdown.style.display = 'none';
           document.getElementById('search-input').value = '';
@@ -1861,8 +1781,8 @@ function renderCategoryPills() {
       state.activeCategory = catId;
 
       if (catId === 'all') {
-        gsap.to(camera.position, { x: 0, y: 1.8, z: 7.2, duration: 1.5, ease: 'power2.inOut' });
-        gsap.to(controls.target, { x: 0, y: 1.2, z: 0, duration: 1.5, ease: 'power2.inOut' });
+        if (camera) gsap.to(camera.position, { x: 0, y: 1.8, z: 7.2, duration: 1.5, ease: 'power2.inOut' });
+        if (controls && controls.target) gsap.to(controls.target, { x: 0, y: 1.2, z: 0, duration: 1.5, ease: 'power2.inOut' });
       } else {
         const cat = state.categories.find(c => c.id === catId);
         if (cat) {
@@ -1871,8 +1791,8 @@ function renderCategoryPills() {
           if (shelf) {
             const z = shelf.three_pos[2];
             const x = cat.side === 'left' ? -2.2 : 2.2;
-            gsap.to(camera.position, { x: 0, y: 1.6, z: z, duration: 1.2, ease: 'power2.inOut' });
-            gsap.to(controls.target, { x: x, y: 1.1, z: z, duration: 1.4, ease: 'power2.inOut' });
+            if (camera) gsap.to(camera.position, { x: 0, y: 1.6, z: z, duration: 1.2, ease: 'power2.inOut' });
+            if (controls && controls.target) gsap.to(controls.target, { x: x, y: 1.1, z: z, duration: 1.4, ease: 'power2.inOut' });
           }
         }
       }
@@ -1904,7 +1824,13 @@ function populateCategorySelect() {
 // 3D Shelf Interaction Boxes & Illuminated Category Signboards
 // ==========================================================================
 function setupShelfInteractionBoxes() {
-  if (!shelvesInteractionGroup) return;
+  if (!shelvesInteractionGroup || !shelvesInteractionGroup.children) {
+    shelvesInteractionGroup = new THREE.Group();
+    shelvesInteractionGroup.name = 'ShelvesInteractionGroup';
+  }
+  if (scene && !scene.getObjectByName('ShelvesInteractionGroup')) {
+    scene.add(shelvesInteractionGroup);
+  }
 
   while (shelvesInteractionGroup.children.length > 0) {
     const obj = shelvesInteractionGroup.children[0];
@@ -1928,7 +1854,13 @@ function setupShelfInteractionBoxes() {
 }
 
 function rebuild3DCategorySigns() {
-  if (!categorySignsGroup) return;
+  if (!categorySignsGroup || !categorySignsGroup.children) {
+    categorySignsGroup = new THREE.Group();
+    categorySignsGroup.name = 'CategorySignsGroup';
+  }
+  if (scene && !scene.getObjectByName('CategorySignsGroup')) {
+    scene.add(categorySignsGroup);
+  }
 
   // Clear any existing virtual category signs from 3D scene (Disabled as per user request: "mukalilulla virtual category display venda")
   while (categorySignsGroup.children.length > 0) {
@@ -2298,7 +2230,7 @@ function openEditLocationModal(bookId) {
   const book = state.books.find(b => b.id === bookId);
   if (!book) return;
 
-  const mesh = booksGroup.children.find(m => m.userData && m.userData.book && m.userData.book.id === bookId);
+  const mesh = findBookMesh(m => m.userData && m.userData.book && m.userData.book.id === bookId);
   const slot = mesh ? mesh.userData.slot : null;
 
   document.getElementById('edit-book-id').value = book.id;
@@ -2359,7 +2291,7 @@ async function onEditLocationSubmit(e) {
 
   // Fly camera to its new place and lift it to show the user
   setTimeout(() => {
-    const targetMesh = booksGroup.children.find(m => m.userData.book.id === bookId);
+    const targetMesh = findBookMesh(m => m.userData && m.userData.book && m.userData.book.id === bookId);
     if (targetMesh) {
       focusOnBook(targetMesh);
     }
@@ -2430,7 +2362,7 @@ async function onAddBookSubmit(e) {
   sfx.playClick();
 
   // Find the newly placed book mesh and fly camera right to it!
-  const targetMesh = booksGroup.children.find(m => m.userData.book.id === newBook.id);
+  const targetMesh = findBookMesh(m => m.userData && m.userData.book && m.userData.book.id === newBook.id);
   if (targetMesh) {
     setTimeout(() => {
       focusOnBook(targetMesh);
@@ -2442,7 +2374,7 @@ function renderManageBooksTable() {
   const tbody = document.getElementById('manage-books-tbody');
   tbody.innerHTML = state.books.map(b => {
     const catObj = state.categories.find(c => c.id === b.category);
-    const mesh = booksGroup.children.find(m => m.userData && m.userData.book && m.userData.book.id === b.id);
+    const mesh = findBookMesh(m => m.userData && m.userData.book && m.userData.book.id === b.id);
     const slot = mesh ? mesh.userData.slot : null;
     const rackText = slot ? slot.rackName : (b.customRack ? `റാക്ക് ${b.customRack}` : 'റാക്ക് 3');
     const bayText = slot ? (slot.bay === 1 ? 'Bay 1' : 'Bay 2') : (b.customBay === 2 ? 'Bay 2' : 'Bay 1');
