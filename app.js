@@ -174,14 +174,13 @@ function initThree() {
   camera.position.set(0, 1.55, 6.2);
 
   // Renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'default' });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMappingExposure = 1.3;
+  renderer.shadowMap.enabled = false; // Disabled to guarantee 100% compatibility across all GPUs
   container.appendChild(renderer.domElement);
 
   // Controls
@@ -193,6 +192,13 @@ function initThree() {
   controls.maxDistance = 22;
   controls.target.set(0, 1.25, 0); // Focus into center of library
   controls.update();
+
+  // Expose to window for debugging and extensions
+  window.scene = scene;
+  window.camera = camera;
+  window.renderer = renderer;
+  window.controls = controls;
+  window.state = state;
 
   // Group to hold all dynamic 3D books
   booksGroup = new THREE.Group();
@@ -266,43 +272,37 @@ function createArchitecturalCeiling() {
 
 function setupLighting() {
   // Soft natural sky-ground gradient illumination
-  const hemiLight = new THREE.HemisphereLight(0xfff7ee, 0x242a38, 1.3);
-  hemiLight.position.set(0, 8, 0);
+  const hemiLight = new THREE.HemisphereLight(0xfff8ee, 0x3d4454, 1.5);
+  hemiLight.position.set(0, 5, 0);
   scene.add(hemiLight);
 
   // Soft warm ambient library light
-  ambientLight = new THREE.AmbientLight(0xfff5eb, 0.65);
+  ambientLight = new THREE.AmbientLight(0xfff5eb, 0.9);
   scene.add(ambientLight);
 
   // Main directional light
-  dirLight = new THREE.DirectionalLight(0xfffaea, 1.1);
-  dirLight.position.set(3, 7, 4);
-  dirLight.castShadow = true;
-  dirLight.shadow.mapSize.width = 2048;
-  dirLight.shadow.mapSize.height = 2048;
-  dirLight.shadow.camera.near = 0.5;
-  dirLight.shadow.camera.far = 25;
-  dirLight.shadow.bias = -0.0005;
+  dirLight = new THREE.DirectionalLight(0xfffaea, 0.9);
+  dirLight.position.set(2, 5, 2);
   scene.add(dirLight);
 
   // Central corridor lighting fixtures along the ceiling
   const zPositions = [5.2, 2.6, 0.0, -2.6, -5.2];
   zPositions.forEach(z => {
-    const pLight = new THREE.PointLight(0xfff1dc, 1.25, 8.5);
+    const pLight = new THREE.PointLight(0xfff1dc, 1.3, 12);
     pLight.position.set(0, 2.45, z);
     scene.add(pLight);
   });
 
   // Left aisle downlights
   [-4.0, 0.0, 4.0].forEach(z => {
-    const pLight = new THREE.PointLight(0xffeed8, 0.95, 6.5);
+    const pLight = new THREE.PointLight(0xffeed8, 1.0, 8);
     pLight.position.set(-3.8, 2.45, z);
     scene.add(pLight);
   });
 
   // Right aisle downlights
   [-4.0, 0.0, 4.0].forEach(z => {
-    const pLight = new THREE.PointLight(0xffeed8, 0.95, 6.5);
+    const pLight = new THREE.PointLight(0xffeed8, 1.0, 8);
     pLight.position.set(3.8, 2.45, z);
     scene.add(pLight);
   });

@@ -10,15 +10,33 @@
   <link rel="stylesheet" href="styles.css">
 
   <script>
+    // Client error logging to backend server
+    window.onerror = function(msg, url, line, col, error) {
+      try {
+        fetch('/api/client-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'ERROR', msg, url, line, col, stack: error ? error.stack : '' })
+        });
+      } catch (e) {}
+    };
+    window.addEventListener('unhandledrejection', function(event) {
+      try {
+        fetch('/api/client-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'UNHANDLED_REJECTION', reason: event.reason ? (event.reason.stack || event.reason.toString()) : '' })
+        });
+      } catch (e) {}
+    });
+
     // Detect if page was opened via local file protocol (file:///) instead of server
     if (window.location.protocol === 'file:') {
-      // Try to redirect to local server if running
       fetch('http://localhost:5050/api/books', { mode: 'no-cors' })
         .then(() => {
           window.location.href = 'http://localhost:5050';
         })
         .catch(() => {
-          // Alert user that browser security blocks 3D models over file:///
           window.addEventListener('DOMContentLoaded', () => {
             const status = document.getElementById('loading-status');
             if (status) {
@@ -29,13 +47,12 @@
     }
   </script>
 
-  <!-- Three.js and GSAP via unpkg / CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Local Offline Vendor Libraries (100% offline, zero CDN latency, zero ad-blocker issues) -->
+  <script src="vendor/three.min.js"></script>
+  <script src="vendor/OrbitControls.js"></script>
+  <script src="vendor/GLTFLoader.js"></script>
+  <script src="vendor/gsap.min.js"></script>
+  <script src="vendor/lucide.min.js"></script>
 </head>
 <body>
   <!-- 3D Canvas Container -->
