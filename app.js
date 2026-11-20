@@ -173,13 +173,25 @@ function initThree() {
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 80);
   camera.position.set(0, 1.55, 6.2);
 
-  // Renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'default' });
+  // Renderer with fallback
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'default' });
+  } catch (e) {
+    console.warn('Antialiased WebGL failed, falling back to basic WebGLRenderer...', e);
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: false, failIfMajorPerformanceCaveat: false });
+    } catch (err2) {
+      console.error('Fatal: WebGL not supported on this browser/GPU:', err2);
+      showLoadingError('നിങ്ങളുടെ ബ്രൗസറിൽ WebGL / Hardware Acceleration ലഭ്യമല്ല. ദയവായി Settings -> System -> "Use graphics acceleration when available" ഓൺ ചെയ്യുക.');
+      throw err2;
+    }
+  }
+
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.3;
+  renderer.toneMappingExposure = 1.0;
   renderer.shadowMap.enabled = false; // Disabled to guarantee 100% compatibility across all GPUs
   container.appendChild(renderer.domElement);
 
@@ -267,42 +279,43 @@ function createArchitecturalCeiling() {
   ceilingGroup.add(rightTrack);
 
   scene.add(ceilingGroup);
+  state.ceilingGroup = ceilingGroup;
   state.roomArchitecture.ceiling = ceilingMesh;
 }
 
 function setupLighting() {
   // Soft natural sky-ground gradient illumination
-  const hemiLight = new THREE.HemisphereLight(0xfff8ee, 0x3d4454, 1.5);
+  const hemiLight = new THREE.HemisphereLight(0xfff8ee, 0x3d4454, 1.1);
   hemiLight.position.set(0, 5, 0);
   scene.add(hemiLight);
 
   // Soft warm ambient library light
-  ambientLight = new THREE.AmbientLight(0xfff5eb, 0.9);
+  ambientLight = new THREE.AmbientLight(0xfff5eb, 0.7);
   scene.add(ambientLight);
 
   // Main directional light
-  dirLight = new THREE.DirectionalLight(0xfffaea, 0.9);
+  dirLight = new THREE.DirectionalLight(0xfffaea, 0.8);
   dirLight.position.set(2, 5, 2);
   scene.add(dirLight);
 
   // Central corridor lighting fixtures along the ceiling
   const zPositions = [5.2, 2.6, 0.0, -2.6, -5.2];
   zPositions.forEach(z => {
-    const pLight = new THREE.PointLight(0xfff1dc, 1.3, 12);
+    const pLight = new THREE.PointLight(0xfff1dc, 0.9, 11);
     pLight.position.set(0, 2.45, z);
     scene.add(pLight);
   });
 
   // Left aisle downlights
   [-4.0, 0.0, 4.0].forEach(z => {
-    const pLight = new THREE.PointLight(0xffeed8, 1.0, 8);
+    const pLight = new THREE.PointLight(0xffeed8, 0.7, 7);
     pLight.position.set(-3.8, 2.45, z);
     scene.add(pLight);
   });
 
   // Right aisle downlights
   [-4.0, 0.0, 4.0].forEach(z => {
-    const pLight = new THREE.PointLight(0xffeed8, 1.0, 8);
+    const pLight = new THREE.PointLight(0xffeed8, 0.7, 7);
     pLight.position.set(3.8, 2.45, z);
     scene.add(pLight);
   });
@@ -372,50 +385,47 @@ function loadLibraryModel() {
   const loader = new THREE.GLTFLoader();
   const progressBar = document.getElementById('progress-bar');
   const loadingStatus = document.getElementById('loading-status');
+  const loadingScreen = document.getElementById('loading-screen');
 
   const hideLoading = () => {
-    const screen = document.getElementById('loading-screen');
-    if (screen && !screen.classList.contains('hidden')) {
-      screen.classList.add('hidden');
+    if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
+      loadingScreen.classList.add('hidden');
     }
   };
 
-  // Safety fallback: Ensure loading screen NEVER stays stuck forever
-  setTimeout(hideLoading, 5000);
+  // Warning if loading takes unusually long
+  let slowWarningTimer = setTimeout(() => {
+    if (!state.modelLoaded && loadingStatus) {
+      loadingStatus.innerHTML = 'ലൈബ്രറി 3D മോഡൽ ലോഡ് ചെയ്യാൻ അല്പം സമയം എടുക്കുന്നു... ദയവായി കാത്തിരിക്കുക...';
+    }
+  }, 8000);
 
   loader.load(
-    'library.glb',
+    'library.glb?v=2.2',
     (gltf) => {
+      clearTimeout(slowWarningTimer);
       try {
         const model = gltf.scene;
         model.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
-            
-            // Material polish
-            if (child.material) {
-              child.material.roughness = 0.45;
-              child.material.metalness = 0.1;
-            }
 
-            // Room Floor: Elegant warm polished library floor
+            // Room Floor (Mesh_518): Elegant polished library floor
             if (child.name === 'Mesh_518') {
               state.roomArchitecture.floor = child;
-              child.material = new THREE.MeshStandardMaterial({
-                color: 0x3a4253, // Polished deep architectural slate floor
-                roughness: 0.35,
-                metalness: 0.2
-              });
+              if (child.material) {
+                child.material.roughness = 0.45;
+                child.material.metalness = 0.15;
+              }
             }
 
-            // Room Walls: Soft warm architectural off-white
+            // Room Walls: Soft architectural matte finish
             if (['Mesh_519', 'Mesh_520', 'Mesh_521', 'Mesh_522', 'Mesh_523'].includes(child.name)) {
-              child.material = new THREE.MeshStandardMaterial({
-                color: 0xdde2ee,
-                roughness: 0.75,
-                metalness: 0.05
-              });
+              if (child.material) {
+                child.material.roughness = 0.85;
+                child.material.metalness = 0.02;
+              }
             }
 
             // Catalog room architecture meshes for dynamic wall distance scaling
@@ -434,6 +444,8 @@ function loadLibraryModel() {
         }
 
         scene.add(model);
+        state.libraryModel = model;
+        state.modelLoaded = true;
         console.log('3D Library GLB loaded successfully!');
 
         // Apply initial room wall distance (from localStorage or recommended 0.80m)
@@ -442,25 +454,59 @@ function loadLibraryModel() {
 
         // Populate 3D books on the shelves
         rebuildAll3DBooks();
+
+        // Hide loading screen smoothly
+        setTimeout(hideLoading, 350);
       } catch (err) {
         console.error('Error during library model post-processing:', err);
-      } finally {
-        setTimeout(hideLoading, 400);
+        showLoadingError('മോഡൽ തയ്യാറാക്കുന്നതിൽ പിശക്: ' + err.message);
       }
     },
     (xhr) => {
       if (xhr.lengthComputable) {
         const pct = Math.round((xhr.loaded / xhr.total) * 100);
         if (progressBar) progressBar.style.width = pct + '%';
-        if (loadingStatus) loadingStatus.textContent = `ലൈബ്രറി മോഡൽ ലോഡ് ചെയ്യുന്നു (${pct}%)...`;
+        if (loadingStatus) loadingStatus.textContent = `ലൈബ്രറി 3D മോഡൽ ലോഡ് ചെയ്യുന്നു (${pct}%)...`;
       }
     },
     (err) => {
+      clearTimeout(slowWarningTimer);
       console.error('Error loading library.glb:', err);
-      if (loadingStatus) loadingStatus.textContent = 'മോഡൽ ലോഡ് ചെയ്യുന്നതിൽ പിശക് സംഭവിച്ചു.';
-      setTimeout(hideLoading, 1500);
+      showLoadingError('3D ലൈബ്രറി മോഡൽ (library.glb) ലോഡ് ചെയ്യാനായില്ല. സെർവർ റൺ ചെയ്യുന്നുണ്ടെന്ന് ഉറപ്പാക്കുക.');
     }
   );
+}
+
+function showLoadingError(message) {
+  const loadingStatus = document.getElementById('loading-status');
+  const progressBar = document.getElementById('progress-bar');
+  if (progressBar) {
+    progressBar.style.width = '100%';
+    progressBar.style.backgroundColor = '#ef4444';
+  }
+  if (loadingStatus) {
+    loadingStatus.innerHTML = `
+      <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 10px; padding: 14px; margin-top: 10px; text-align: left;">
+        <div style="color: #f87171; font-weight: 700; margin-bottom: 6px; font-size: 0.92rem;">
+          ⚠️ ${message}
+        </div>
+        <div style="font-size: 0.82rem; color: #cbd5e1; margin-bottom: 12px; line-height: 1.5;">
+          • സെർവർ റൺ ചെയ്യാൻ <b>run_library.bat</b> ഡബിൾ ക്ലിക്ക് ചെയ്യുക.<br>
+          • തുടർന്ന് താഴെയുള്ള ബട്ടൺ ക്ലിക്ക് ചെയ്ത് പേജ് റീഫ്രഷ് ചെയ്യുക.
+        </div>
+        <button onclick="window.location.reload()" style="background: #3b82f6; color: white; border: none; padding: 7px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem;">
+          🔄 വീണ്ടും ശ്രമിക്കുക (Reload)
+        </button>
+      </div>
+    `;
+  }
+  try {
+    fetch('/api/client-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'MODEL_LOAD_ERROR', message })
+    });
+  } catch (e) {}
 }
 
 // ==========================================================================
@@ -2314,13 +2360,20 @@ function animate() {
     controls.update();
   }
 
+  // Dynamic ceiling visibility: Hide ceiling when viewing from above (e.g. Overview camera at y=8.5)
+  if (state.ceilingGroup && camera) {
+    state.ceilingGroup.visible = camera.position.y < 2.8;
+  }
+
   // Gentle floating animation on focused book
   if (state.focusedBookMesh && !state.isNavigating) {
     const time = Date.now() * 0.002;
     state.focusedBookMesh.position.y += Math.sin(time) * 0.0004;
   }
 
-  renderer.render(scene, camera);
+  if (renderer && scene && camera) {
+    renderer.render(scene, camera);
+  }
 }
 
 // Start application safely regardless of when script is parsed

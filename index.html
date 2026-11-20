@@ -37,12 +37,35 @@
           window.location.href = 'http://localhost:5050';
         })
         .catch(() => {
-          window.addEventListener('DOMContentLoaded', () => {
+          const showFileProtoWarning = () => {
             const status = document.getElementById('loading-status');
+            const progress = document.getElementById('progress-bar');
+            if (progress) progress.style.display = 'none';
             if (status) {
-              status.innerHTML = '<span style="color:#f87171;font-weight:600;">⚠️ ശ്രദ്ധിക്കുക:</span> ഫയൽ നേരിട്ടാണ് (file://) തുറന്നത്. മോഡലുകൾ ലോഡ് ചെയ്യാൻ <b>run_library.bat</b> ഡബിൾ ക്ലിക്ക് ചെയ്യുക (അല്ലെങ്കിൽ <a href="http://localhost:5050" style="color:#38bdf8;text-decoration:underline;">http://localhost:5050</a> തുറക്കുക).';
+              status.innerHTML = `
+                <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 18px; text-align: left; margin-top: 10px;">
+                  <div style="color: #f87171; font-weight: 700; font-size: 1rem; margin-bottom: 8px;">
+                    ⚠️ ഫയൽ നേരിട്ടാണ് (file:///) തുറന്നത്
+                  </div>
+                  <div style="color: #e2e8f0; font-size: 0.85rem; line-height: 1.6; margin-bottom: 12px;">
+                    ബ്രൗസറിന്റെ സെക്യൂരിറ്റി (CORS) കാരണം 3D GLB മോഡലുകൾ നേരിട്ട് കാണാൻ കഴിയില്ല. സെർവർ സ്റ്റാർട്ട് ചെയ്യേണ്ടതുണ്ട്.
+                  </div>
+                  <div style="color: #38bdf8; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">
+                    👉 ചെയ്യേണ്ടത്:
+                  </div>
+                  <div style="color: #cbd5e1; font-size: 0.83rem; line-height: 1.6;">
+                    1. പ്രോജക്റ്റ് ഫോൾഡറിലെ <b>run_library.bat</b> ഫയലിൽ ഡബിൾ ക്ലിക്ക് ചെയ്യുക.<br>
+                    2. തുടർന്ന് ബ്രൗസറിൽ <a href="http://localhost:5050" style="color: #60a5fa; text-decoration: underline; font-weight: bold;">http://localhost:5050</a> തുറക്കുക.
+                  </div>
+                </div>
+              `;
             }
-          });
+          };
+          if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', showFileProtoWarning);
+          } else {
+            showFileProtoWarning();
+          }
         });
     }
   </script>
@@ -710,6 +733,6 @@
   </div>
 
   <!-- Main JavaScript Application -->
-  <script src="app.js"></script>
+  <script src="app.js?v=2.2"></script>
 </body>
 </html>
