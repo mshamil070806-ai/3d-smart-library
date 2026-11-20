@@ -136,15 +136,11 @@ function addSafeListener(id, event, handler) {
 async function init() {
   console.log('3D Smart Library initializing...');
   
-  // 1. Initialize 3D Engine & Scene
-  let threeReady = false;
+  let threeOk = false;
   try {
-    initThree();
-    threeReady = true;
+    threeOk = initThree();
   } catch (err) {
-    console.error('Fatal WebGL/3D initialization error:', err);
-    // Halt further 3D operations if WebGL is unavailable
-    return;
+    console.error('initThree error:', err);
   }
 
   try {
@@ -153,116 +149,84 @@ async function init() {
     console.error('setupEventListeners error:', err);
   }
 
+  if (!threeOk) {
+    console.warn('Three.js failed to initialize renderer. Stopping 3D asset pipeline.');
+    return;
+  }
+
   try {
     await loadLayoutAndBooks();
   } catch (err) {
     console.error('loadLayoutAndBooks error:', err);
   }
 
-  if (threeReady) {
-    try {
-      loadLibraryModel();
-    } catch (err) {
-      console.error('loadLibraryModel error:', err);
-    }
-
-    try {
-      animate();
-    } catch (err) {
-      console.error('animate error:', err);
-    }
-  }
-}
-
-function createSafeWebGLRenderer() {
-  const canvas = document.createElement('canvas');
-  let gl = null;
-  const contextNames = ['webgl2', 'webgl', 'experimental-webgl'];
-  const attrOptions = [
-    { antialias: true, powerPreference: 'default' },
-    { antialias: false, failIfMajorPerformanceCaveat: false },
-    { antialias: false },
-    {}
-  ];
-
-  // Try direct context acquisition across all WebGL API versions
-  for (const name of contextNames) {
-    for (const attrs of attrOptions) {
-      try {
-        gl = canvas.getContext(name, attrs);
-        if (gl) {
-          console.log(`WebGL acquired successfully via ${name}`);
-          break;
-        }
-      } catch (e) {}
-    }
-    if (gl) break;
-  }
-
-  // If a context was acquired directly, wrap it in Three.js renderer
-  if (gl) {
-    try {
-      return new THREE.WebGLRenderer({ canvas, context: gl });
-    } catch (e) {
-      console.warn('Direct context wrapping failed, falling back to constructors...', e);
-    }
-  }
-
-  // Constructor-based fallback attempts
-  for (const attrs of attrOptions) {
-    try {
-      return new THREE.WebGLRenderer(attrs);
-    } catch (e) {}
+  try {
+    loadLibraryModel();
+  } catch (err) {
+    console.error('loadLibraryModel error:', err);
   }
 
   try {
-    return new THREE.WebGLRenderer();
-  } catch (e) {}
+    animate();
+  } catch (err) {
+    console.error('animate error:', err);
+  }
+}
+
+function createRobustRenderer(container) {
+  // Strategy 1: Standard Three.js WebGLRenderer
+  try {
+    const r1 = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    if (r1 && r1.getContext()) {
+      container.appendChild(r1.domElement);
+      return r1;
+    }
+  } catch (e) {
+    console.warn('Strategy 1 (Antialiased WebGL) failed:', e);
+  }
+
+  // Strategy 2: Three.js WebGLRenderer with minimal compatibility attributes
+  try {
+    const r2 = new THREE.WebGLRenderer({ antialias: false, alpha: false, failIfMajorPerformanceCaveat: false });
+    if (r2 && r2.getContext()) {
+      container.appendChild(r2.domElement);
+      return r2;
+    }
+  } catch (e) {
+    console.warn('Strategy 2 (Minimal WebGL) failed:', e);
+  }
+
+  // Strategy 3: Directly create canvas and acquire WebGL2 / WebGL context manually
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.id = 'three-canvas';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
+    container.appendChild(canvas);
+
+    for (const ctxType of ['webgl2', 'webgl', 'experimental-webgl']) {
+      try {
+        const gl = canvas.getContext(ctxType, { alpha: false, depth: true, antialias: false });
+        if (gl) {
+          const r3 = new THREE.WebGLRenderer({ canvas: canvas, context: gl, antialias: false });
+          if (r3) {
+            console.log(`Strategy 3: Acquired ${ctxType} context directly!`);
+            return r3;
+          }
+        }
+      } catch (errCtx) {}
+    }
+  } catch (e) {
+    console.warn('Strategy 3 (Manual context) failed:', e);
+  }
 
   return null;
 }
 
-function showWebGLDisabledError() {
-  const loadingStatus = document.getElementById('loading-status');
-  const progressBar = document.getElementById('progress-bar');
-  if (progressBar) progressBar.style.display = 'none';
-
-  if (loadingStatus) {
-    loadingStatus.innerHTML = `
-      <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 20px; text-align: left; max-width: 480px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-        <div style="color: #f87171; font-weight: 700; font-size: 1.05rem; margin-bottom: 8px;">
-          ⚠️ 3D ഗ്രാഫിക്സ് (WebGL) സപ്പോർട്ട് ലഭ്യമല്ല
-        </div>
-        <div style="color: #e2e8f0; font-size: 0.85rem; line-height: 1.6; margin-bottom: 12px;">
-          ഈ 3D ലൈബ്രറി കാണുന്നതിന് ബ്രൗസറിൽ <b>Hardware Acceleration</b> ഓൺ ചെയ്യേണ്ടതുണ്ട്.
-        </div>
-        <div style="background: rgba(0, 0, 0, 0.35); border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 0.82rem; color: #cbd5e1; line-height: 1.6;">
-          <div style="color: #38bdf8; font-weight: 600; margin-bottom: 4px;">🛠️ എങ്ങനെ ഓൺ ചെയ്യാം (Chrome / Edge):</div>
-          1. ബ്രൗസറിൽ <b>chrome://settings/system</b> തുറക്കുക.<br>
-          2. <b>"Use graphics acceleration when available"</b> എന്നത് ഓൺ (ON) ചെയ്യുക.<br>
-          3. തുടർന്ന് <b>Relaunch</b> ക്ലിക്ക് ചെയ്ത് ബ്രൗസർ റീസ്റ്റാർട്ട് ചെയ്യുക.
-        </div>
-        <button onclick="window.location.reload()" style="background: #3b82f6; color: white; border: none; padding: 9px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.88rem; width: 100%;">
-          🔄 വീണ്ടും ശ്രമിക്കുക (Reload)
-        </button>
-      </div>
-    `;
-  }
-
-  try {
-    fetch('/api/client-log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'WEBGL_UNAVAILABLE_ERROR', userAgent: navigator.userAgent })
-    });
-  } catch (e) {}
-}
-
 function initThree() {
   const container = document.getElementById('canvas-container');
-  if (!container) {
-    throw new Error('Canvas container #canvas-container not found');
-  }
+  if (!container) return false;
 
   // Scene
   scene = new THREE.Scene();
@@ -273,11 +237,12 @@ function initThree() {
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 80);
   camera.position.set(0, 1.55, 6.2);
 
-  // Renderer with robust fallback
-  renderer = createSafeWebGLRenderer();
+  // Renderer with multi-strategy fallback
+  renderer = createRobustRenderer(container);
   if (!renderer) {
-    showWebGLDisabledError();
-    throw new Error('WebGL context could not be created');
+    console.error('Fatal: WebGL context could not be created on this system.');
+    showLoadingError('നിങ്ങളുടെ ബ്രൗസറിൽ WebGL / Graphics സപ്പോർട്ട് താൽക്കാലികമായി ലഭ്യമല്ല. ദയവായി പേജ് റീഫ്രഷ് ചെയ്യുകയോ അല്ലെങ്കിൽ Settings -> System -> "Use graphics acceleration when available" ഓൺ ചെയ്യുകയോ ചെയ്യുക.');
+    return false;
   }
 
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -285,18 +250,19 @@ function initThree() {
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
-  renderer.shadowMap.enabled = false; // Disabled to guarantee 100% compatibility across all GPUs
-  container.appendChild(renderer.domElement);
+  renderer.shadowMap.enabled = false;
 
   // Controls
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
-  controls.maxPolarAngle = Math.PI / 2 + 0.02; // Don't go below floor
-  controls.minDistance = 0.4;
-  controls.maxDistance = 22;
-  controls.target.set(0, 1.25, 0); // Focus into center of library
-  controls.update();
+  if (THREE.OrbitControls) {
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 + 0.02; // Don't go below floor
+    controls.minDistance = 0.4;
+    controls.maxDistance = 22;
+    controls.target.set(0, 1.25, 0); // Focus into center of library
+    controls.update();
+  }
 
   // Expose to window for debugging and extensions
   window.scene = scene;
@@ -305,9 +271,13 @@ function initThree() {
   window.controls = controls;
   window.state = state;
 
-  // Add groups to scene safely
+  // Group to hold all dynamic 3D books
   if (!scene.getObjectByName('BooksGroup')) scene.add(booksGroup);
+
+  // Group to hold 3D floating illuminated category signs
   if (!scene.getObjectByName('CategorySignsGroup')) scene.add(categorySignsGroup);
+
+  // Group for shelf direct click interactions
   if (!scene.getObjectByName('ShelvesInteractionGroup')) scene.add(shelvesInteractionGroup);
 
   // Architectural modern ceiling with LED light panels
@@ -322,6 +292,7 @@ function initThree() {
 
   window.addEventListener('resize', onWindowResize);
   renderer.domElement.addEventListener('click', onCanvasClick);
+  return true;
 }
 
 function createArchitecturalCeiling() {
@@ -465,10 +436,6 @@ async function loadLayoutAndBooks() {
 // Load 3D Library Room Model (.GLB)
 // ==========================================================================
 function loadLibraryModel() {
-  if (!scene) {
-    console.warn('Cannot load 3D model: scene is not initialized.');
-    return;
-  }
   const loader = new THREE.GLTFLoader();
   const progressBar = document.getElementById('progress-bar');
   const loadingStatus = document.getElementById('loading-status');
@@ -944,7 +911,6 @@ function computeShelfSlotCoordinates(targetShelf, rackNum, bayNum, slotInBay, fa
 
 function rebuildAll3DBooks() {
   if (!booksGroup || !booksGroup.children) return;
-
   // Clear existing books from 3D scene
   while (booksGroup.children.length > 0) {
     const obj = booksGroup.children[0];
