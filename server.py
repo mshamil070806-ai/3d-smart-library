@@ -13,6 +13,12 @@ class LibraryHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=DIRECTORY, **kwargs)
 
+    def copyfile(self, source, outputfile):
+        try:
+            super().copyfile(source, outputfile)
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+            pass
+
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -366,10 +372,10 @@ class LibraryHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
 if __name__ == "__main__":
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(("", PORT), LibraryHTTPRequestHandler) as httpd:
+    http.server.ThreadingHTTPServer.allow_reuse_address = True
+    with http.server.ThreadingHTTPServer(("", PORT), LibraryHTTPRequestHandler) as httpd:
         print(f"==================================================")
-        print(f"  3D Smart Library Server running on port {PORT}")
+        print(f"  3D Smart Library Server running on port {PORT} (Multi-threaded)")
         print(f"  Open in browser: http://localhost:{PORT}")
         print(f"==================================================")
         try:

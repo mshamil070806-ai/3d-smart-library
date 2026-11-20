@@ -107,33 +107,12 @@ function initThree() {
   
   // Scene
   scene = new THREE.Scene();
-  scene.background = new THREE.Color('#0b0e14');
-  scene.fog = new THREE.FogExp2('#0b0e14', 0.035);
+  scene.background = new THREE.Color('#0f172a');
+  scene.fog = new THREE.FogExp2('#0f172a', 0.015);
 
-  // Camera - Start at library entrance door
+  // Camera - Positioned naturally inside library entrance
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 80);
-  camera.position.set(0, 1.6, 7.6); // Front door entrance
-
-  // Renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  container.appendChild(renderer.domElement);
-
-  // Controls
-  controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
-  controls.maxPolarAngle = Math.PI / 2 + 0.02; // Don't go below floor
-  controls.minDistance = 0.4;
-  controls.maxDistance = 22;
-  controls.target.set(0, 1.2, 0); // Focus into center of library
-  controls.update();
+  camera.position.set(0, 2.0, 5.0); // Inside entrance foyer facing shelves
 
   // Group to hold all dynamic 3D books
   booksGroup = new THREE.Group();
@@ -153,21 +132,53 @@ function initThree() {
   // Lighting
   setupLighting();
 
+  // Renderer with fallback
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'default' });
+  } catch (e1) {
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: false, failIfMajorPerformanceCaveat: false });
+    } catch (e2) {
+      console.error('WebGLRenderer fallback failed:', e2);
+    }
+  }
+
+  if (renderer) {
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 + 0.02; // Don't go below floor
+    controls.minDistance = 0.4;
+    controls.maxDistance = 25;
+    controls.target.set(0, 1.2, 0); // Focus into center of library
+    controls.update();
+
+    renderer.domElement.addEventListener('click', onCanvasClick);
+  }
+
   // Raycaster for clicking books in 3D
   raycaster = new THREE.Raycaster();
   mouse = new THREE.Vector2();
 
   window.addEventListener('resize', onWindowResize);
-  renderer.domElement.addEventListener('click', onCanvasClick);
 }
 
 function setupLighting() {
   // Soft warm ambient library light
-  ambientLight = new THREE.AmbientLight(0xfff5eb, 0.7);
+  ambientLight = new THREE.AmbientLight(0xfff5eb, 1.2);
   scene.add(ambientLight);
 
   // Main directional skylight / ceiling track
-  dirLight = new THREE.DirectionalLight(0xffeedd, 1.1);
+  dirLight = new THREE.DirectionalLight(0xffeedd, 1.3);
   dirLight.position.set(3, 8, 4);
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.width = 2048;
@@ -178,12 +189,12 @@ function setupLighting() {
   scene.add(dirLight);
 
   // Central corridor lighting
-  const corridorLight = new THREE.PointLight(0xffe8c8, 1.2, 18);
+  const corridorLight = new THREE.PointLight(0xffe8c8, 1.5, 25);
   corridorLight.position.set(0, 3.5, 0);
   scene.add(corridorLight);
 
-  const doorLight = new THREE.PointLight(0xfff0dd, 0.9, 12);
-  doorLight.position.set(0, 2.5, 6.5);
+  const doorLight = new THREE.PointLight(0xfff0dd, 1.2, 16);
+  doorLight.position.set(0, 2.5, 5.0);
   scene.add(doorLight);
 }
 
@@ -248,49 +259,76 @@ async function loadLayoutAndBooks() {
 // Load 3D Library Room Model (.GLB)
 // ==========================================================================
 function loadLibraryModel() {
-  const loader = new THREE.GLTFLoader();
   const progressBar = document.getElementById('progress-bar');
   const loadingStatus = document.getElementById('loading-status');
+  const screen = document.getElementById('loading-screen');
+
+  if (typeof THREE === 'undefined' || typeof THREE.GLTFLoader === 'undefined') {
+    console.error('GLTFLoader is undefined');
+    if (screen) setTimeout(() => screen.classList.add('hidden'), 1500);
+    return;
+  }
+
+  const loader = new THREE.GLTFLoader();
+
+  // Watchdog: hide loading screen if it takes too long
+  const watchdog = setTimeout(() => {
+    if (screen && !screen.classList.contains('hidden')) {
+      screen.classList.add('hidden');
+    }
+  }, 6000);
 
   loader.load(
     'library.glb',
     (gltf) => {
-      const model = gltf.scene;
-      model.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-          
-          // Material polish
-          if (child.material) {
-            child.material.roughness = 0.45;
-            child.material.metalness = 0.1;
+      clearTimeout(watchdog);
+      try {
+        const model = gltf.scene;
+        model.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            
+            // Material polish
+            if (child.material) {
+              child.material.roughness = 0.45;
+              child.material.metalness = 0.1;
+              child.material.side = THREE.DoubleSide;
+            }
           }
+        });
+
+        scene.add(model);
+        console.log('3D Library GLB loaded successfully!');
+
+        // Populate 3D books on the shelves
+        try {
+          rebuildAll3DBooks();
+        } catch (be) {
+          console.error('rebuildAll3DBooks error:', be);
         }
-      });
-
-      scene.add(model);
-      console.log('3D Library GLB loaded successfully!');
-
-      // Populate 3D books on the shelves
-      rebuildAll3DBooks();
-
-      // Hide loading screen with fade
-      setTimeout(() => {
-        const screen = document.getElementById('loading-screen');
-        screen.classList.add('hidden');
-      }, 500);
+      } catch (err) {
+        console.error('Model processing error:', err);
+      } finally {
+        setTimeout(() => {
+          if (screen) screen.classList.add('hidden');
+        }, 300);
+      }
     },
     (xhr) => {
-      if (xhr.lengthComputable) {
+      if (xhr.lengthComputable && progressBar && loadingStatus) {
         const pct = Math.round((xhr.loaded / xhr.total) * 100);
         progressBar.style.width = pct + '%';
         loadingStatus.textContent = `ലൈബ്രറി മോഡൽ ലോഡ് ചെയ്യുന്നു (${pct}%)...`;
       }
     },
     (err) => {
+      clearTimeout(watchdog);
       console.error('Error loading library.glb:', err);
-      loadingStatus.textContent = 'മോഡൽ ലോഡ് ചെയ്യുന്നതിൽ പിശക് സംഭവിച്ചു.';
+      if (loadingStatus) loadingStatus.textContent = 'മോഡൽ ലോഡ് ചെയ്യുന്നതിൽ പിശക് സംഭവിച്ചു.';
+      setTimeout(() => {
+        if (screen) screen.classList.add('hidden');
+      }, 1500);
     }
   );
 }
@@ -986,7 +1024,7 @@ function setupEventListeners() {
   document.getElementById('entrance-cam-btn').addEventListener('click', () => {
     sfx.playClick();
     if (state.focusedBookMesh) putBackBook(false);
-    gsap.to(camera.position, { x: 0, y: 1.6, z: 7.6, duration: 1.5, ease: 'power2.inOut' });
+    gsap.to(camera.position, { x: 0, y: 2.0, z: 5.0, duration: 1.5, ease: 'power2.inOut' });
     gsap.to(controls.target, { x: 0, y: 1.2, z: 0, duration: 1.5, ease: 'power2.inOut' });
   });
 
@@ -1981,6 +2019,8 @@ function updateTotalBooksBadge() {
 function animate() {
   requestAnimationFrame(animate);
 
+  if (!renderer || !scene || !camera) return;
+
   if (controls && controls.enabled) {
     controls.update();
   }
@@ -1995,7 +2035,15 @@ function animate() {
 }
 
 // Start application
-window.addEventListener('DOMContentLoaded', () => {
+function startApp() {
   init();
-  lucide.createIcons();
-});
+  if (typeof lucide !== 'undefined' && typeof lucide.createIcons === 'function') {
+    try { lucide.createIcons(); } catch (e) {}
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startApp);
+} else {
+  startApp();
+}
