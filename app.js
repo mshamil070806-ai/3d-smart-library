@@ -29,7 +29,12 @@ const state = {
 // Scene, Camera, Renderer, Controls
 let scene, camera, renderer, controls;
 let raycaster, mouse;
-let booksGroup, categorySignsGroup, shelvesInteractionGroup;
+let booksGroup = new THREE.Group();
+booksGroup.name = 'BooksGroup';
+let categorySignsGroup = new THREE.Group();
+categorySignsGroup.name = 'CategorySignsGroup';
+let shelvesInteractionGroup = new THREE.Group();
+shelvesInteractionGroup.name = 'ShelvesInteractionGroup';
 let ambientLight, dirLight, aisleLights = [];
 
 // Audio Synthesizer (Zero asset dependency)
@@ -130,10 +135,16 @@ function addSafeListener(id, event, handler) {
 // ==========================================================================
 async function init() {
   console.log('3D Smart Library initializing...');
+  
+  // 1. Initialize 3D Engine & Scene
+  let threeReady = false;
   try {
     initThree();
+    threeReady = true;
   } catch (err) {
-    console.error('initThree error:', err);
+    console.error('Fatal WebGL/3D initialization error:', err);
+    // Halt further 3D operations if WebGL is unavailable
+    return;
   }
 
   try {
@@ -148,22 +159,111 @@ async function init() {
     console.error('loadLayoutAndBooks error:', err);
   }
 
-  try {
-    loadLibraryModel();
-  } catch (err) {
-    console.error('loadLibraryModel error:', err);
+  if (threeReady) {
+    try {
+      loadLibraryModel();
+    } catch (err) {
+      console.error('loadLibraryModel error:', err);
+    }
+
+    try {
+      animate();
+    } catch (err) {
+      console.error('animate error:', err);
+    }
+  }
+}
+
+function createSafeWebGLRenderer() {
+  const canvas = document.createElement('canvas');
+  let gl = null;
+  const contextNames = ['webgl2', 'webgl', 'experimental-webgl'];
+  const attrOptions = [
+    { antialias: true, powerPreference: 'default' },
+    { antialias: false, failIfMajorPerformanceCaveat: false },
+    { antialias: false },
+    {}
+  ];
+
+  // Try direct context acquisition across all WebGL API versions
+  for (const name of contextNames) {
+    for (const attrs of attrOptions) {
+      try {
+        gl = canvas.getContext(name, attrs);
+        if (gl) {
+          console.log(`WebGL acquired successfully via ${name}`);
+          break;
+        }
+      } catch (e) {}
+    }
+    if (gl) break;
+  }
+
+  // If a context was acquired directly, wrap it in Three.js renderer
+  if (gl) {
+    try {
+      return new THREE.WebGLRenderer({ canvas, context: gl });
+    } catch (e) {
+      console.warn('Direct context wrapping failed, falling back to constructors...', e);
+    }
+  }
+
+  // Constructor-based fallback attempts
+  for (const attrs of attrOptions) {
+    try {
+      return new THREE.WebGLRenderer(attrs);
+    } catch (e) {}
   }
 
   try {
-    animate();
-  } catch (err) {
-    console.error('animate error:', err);
+    return new THREE.WebGLRenderer();
+  } catch (e) {}
+
+  return null;
+}
+
+function showWebGLDisabledError() {
+  const loadingStatus = document.getElementById('loading-status');
+  const progressBar = document.getElementById('progress-bar');
+  if (progressBar) progressBar.style.display = 'none';
+
+  if (loadingStatus) {
+    loadingStatus.innerHTML = `
+      <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 20px; text-align: left; max-width: 480px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <div style="color: #f87171; font-weight: 700; font-size: 1.05rem; margin-bottom: 8px;">
+          ⚠️ 3D ഗ്രാഫിക്സ് (WebGL) സപ്പോർട്ട് ലഭ്യമല്ല
+        </div>
+        <div style="color: #e2e8f0; font-size: 0.85rem; line-height: 1.6; margin-bottom: 12px;">
+          ഈ 3D ലൈബ്രറി കാണുന്നതിന് ബ്രൗസറിൽ <b>Hardware Acceleration</b> ഓൺ ചെയ്യേണ്ടതുണ്ട്.
+        </div>
+        <div style="background: rgba(0, 0, 0, 0.35); border-radius: 8px; padding: 12px; margin-bottom: 14px; font-size: 0.82rem; color: #cbd5e1; line-height: 1.6;">
+          <div style="color: #38bdf8; font-weight: 600; margin-bottom: 4px;">🛠️ എങ്ങനെ ഓൺ ചെയ്യാം (Chrome / Edge):</div>
+          1. ബ്രൗസറിൽ <b>chrome://settings/system</b> തുറക്കുക.<br>
+          2. <b>"Use graphics acceleration when available"</b> എന്നത് ഓൺ (ON) ചെയ്യുക.<br>
+          3. തുടർന്ന് <b>Relaunch</b> ക്ലിക്ക് ചെയ്ത് ബ്രൗസർ റീസ്റ്റാർട്ട് ചെയ്യുക.
+        </div>
+        <button onclick="window.location.reload()" style="background: #3b82f6; color: white; border: none; padding: 9px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.88rem; width: 100%;">
+          🔄 വീണ്ടും ശ്രമിക്കുക (Reload)
+        </button>
+      </div>
+    `;
   }
+
+  try {
+    fetch('/api/client-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'WEBGL_UNAVAILABLE_ERROR', userAgent: navigator.userAgent })
+    });
+  } catch (e) {}
 }
 
 function initThree() {
   const container = document.getElementById('canvas-container');
-  
+  if (!container) {
+    throw new Error('Canvas container #canvas-container not found');
+  }
+
   // Scene
   scene = new THREE.Scene();
   scene.background = new THREE.Color('#141722');
@@ -173,18 +273,11 @@ function initThree() {
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 80);
   camera.position.set(0, 1.55, 6.2);
 
-  // Renderer with fallback
-  try {
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'default' });
-  } catch (e) {
-    console.warn('Antialiased WebGL failed, falling back to basic WebGLRenderer...', e);
-    try {
-      renderer = new THREE.WebGLRenderer({ antialias: false, failIfMajorPerformanceCaveat: false });
-    } catch (err2) {
-      console.error('Fatal: WebGL not supported on this browser/GPU:', err2);
-      showLoadingError('നിങ്ങളുടെ ബ്രൗസറിൽ WebGL / Hardware Acceleration ലഭ്യമല്ല. ദയവായി Settings -> System -> "Use graphics acceleration when available" ഓൺ ചെയ്യുക.');
-      throw err2;
-    }
+  // Renderer with robust fallback
+  renderer = createSafeWebGLRenderer();
+  if (!renderer) {
+    showWebGLDisabledError();
+    throw new Error('WebGL context could not be created');
   }
 
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -212,20 +305,10 @@ function initThree() {
   window.controls = controls;
   window.state = state;
 
-  // Group to hold all dynamic 3D books
-  booksGroup = new THREE.Group();
-  booksGroup.name = 'BooksGroup';
-  scene.add(booksGroup);
-
-  // Group to hold 3D floating illuminated category signs
-  categorySignsGroup = new THREE.Group();
-  categorySignsGroup.name = 'CategorySignsGroup';
-  scene.add(categorySignsGroup);
-
-  // Group for shelf direct click interactions
-  shelvesInteractionGroup = new THREE.Group();
-  shelvesInteractionGroup.name = 'ShelvesInteractionGroup';
-  scene.add(shelvesInteractionGroup);
+  // Add groups to scene safely
+  if (!scene.getObjectByName('BooksGroup')) scene.add(booksGroup);
+  if (!scene.getObjectByName('CategorySignsGroup')) scene.add(categorySignsGroup);
+  if (!scene.getObjectByName('ShelvesInteractionGroup')) scene.add(shelvesInteractionGroup);
 
   // Architectural modern ceiling with LED light panels
   createArchitecturalCeiling();
@@ -382,6 +465,10 @@ async function loadLayoutAndBooks() {
 // Load 3D Library Room Model (.GLB)
 // ==========================================================================
 function loadLibraryModel() {
+  if (!scene) {
+    console.warn('Cannot load 3D model: scene is not initialized.');
+    return;
+  }
   const loader = new THREE.GLTFLoader();
   const progressBar = document.getElementById('progress-bar');
   const loadingStatus = document.getElementById('loading-status');
@@ -856,6 +943,8 @@ function computeShelfSlotCoordinates(targetShelf, rackNum, bayNum, slotInBay, fa
 }
 
 function rebuildAll3DBooks() {
+  if (!booksGroup || !booksGroup.children) return;
+
   // Clear existing books from 3D scene
   while (booksGroup.children.length > 0) {
     const obj = booksGroup.children[0];

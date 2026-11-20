@@ -21,7 +21,11 @@ powershell -Command "try { $r = Invoke-WebRequest -Uri 'http://localhost:5050/ap
 if %ERRORLEVEL% EQU 0 (
     echo Server is ALREADY active on port 5050!
     echo Opening browser at http://localhost:5050 ...
-    start http://localhost:5050
+    if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
+        start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --enable-webgl --ignore-gpu-blocklist http://localhost:5050
+    ) else (
+        start http://localhost:5050
+    )
     goto running
 )
 
@@ -32,7 +36,11 @@ echo Waiting for server to initialize...
 powershell -Command "for ($i=0; $i -lt 12; $i++) { try { $r = Invoke-WebRequest -Uri 'http://localhost:5050/api/books' -TimeoutSec 1 -UseBasicParsing; exit 0 } catch { Start-Sleep -Milliseconds 500 } }; exit 1"
 
 echo Opening browser at http://localhost:5050 ...
-start http://localhost:5050
+if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
+    start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --enable-webgl --ignore-gpu-blocklist http://localhost:5050
+) else (
+    start http://localhost:5050
+)
 
 :running
 echo.
