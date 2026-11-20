@@ -115,15 +115,50 @@ class SoundFX {
 }
 const sfx = new SoundFX();
 
+// Safe DOM Event Listener helper (Prevents any TypeError if an element is missing)
+function addSafeListener(id, event, handler) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener(event, handler);
+    return true;
+  }
+  return false;
+}
+
 // ==========================================================================
 // Initialization
 // ==========================================================================
 async function init() {
-  initThree();
-  setupEventListeners();
-  await loadLayoutAndBooks();
-  loadLibraryModel();
-  animate();
+  console.log('3D Smart Library initializing...');
+  try {
+    initThree();
+  } catch (err) {
+    console.error('initThree error:', err);
+  }
+
+  try {
+    setupEventListeners();
+  } catch (err) {
+    console.error('setupEventListeners error:', err);
+  }
+
+  try {
+    await loadLayoutAndBooks();
+  } catch (err) {
+    console.error('loadLayoutAndBooks error:', err);
+  }
+
+  try {
+    loadLibraryModel();
+  } catch (err) {
+    console.error('loadLibraryModel error:', err);
+  }
+
+  try {
+    animate();
+  } catch (err) {
+    console.error('animate error:', err);
+  }
 }
 
 function initThree() {
@@ -1211,14 +1246,14 @@ function setupEventListeners() {
   });
 
   // Camera Action Buttons
-  document.getElementById('entrance-cam-btn').addEventListener('click', () => {
+  addSafeListener('entrance-cam-btn', 'click', () => {
     sfx.playClick();
     if (state.focusedBookMesh) putBackBook(false);
     gsap.to(camera.position, { x: 0, y: 1.55, z: 6.2, duration: 1.5, ease: 'power2.inOut' });
     gsap.to(controls.target, { x: 0, y: 1.25, z: 0, duration: 1.5, ease: 'power2.inOut' });
   });
 
-  document.getElementById('overview-cam-btn').addEventListener('click', () => {
+  addSafeListener('overview-cam-btn', 'click', () => {
     sfx.playClick();
     if (state.focusedBookMesh) putBackBook(false);
     gsap.to(camera.position, { x: 0, y: 8.5, z: 8.0, duration: 1.8, ease: 'power2.inOut' });
@@ -1226,11 +1261,13 @@ function setupEventListeners() {
   });
 
   // Book Inspect Card buttons
-  document.getElementById('close-inspect-btn').addEventListener('click', () => putBackBook(true));
-  document.getElementById('put-back-btn').addEventListener('click', () => putBackBook(true));
-  document.getElementById('issue-btn').addEventListener('click', () => {
+  addSafeListener('close-inspect-btn', 'click', () => putBackBook(true));
+  addSafeListener('put-back-btn', 'click', () => putBackBook(true));
+  addSafeListener('issue-btn', 'click', () => {
     sfx.playClick();
-    alert(`"${state.focusedBookMesh.userData.book.title}" വിജയകരമായി ഇഷ്യൂ ചെയ്തു!`);
+    if (state.focusedBookMesh && state.focusedBookMesh.userData.book) {
+      alert(`"${state.focusedBookMesh.userData.book.title}" വിജയകരമായി ഇഷ്യൂ ചെയ്തു!`);
+    }
     putBackBook(true);
   });
 
@@ -1251,12 +1288,12 @@ function setupEventListeners() {
   const cancelEditBtn = document.getElementById('cancel-edit-btn');
   if (closeEditModalBtn) {
     closeEditModalBtn.addEventListener('click', () => {
-      editModal.style.display = 'none';
+      if (editModal) editModal.style.display = 'none';
     });
   }
   if (cancelEditBtn) {
     cancelEditBtn.addEventListener('click', () => {
-      editModal.style.display = 'none';
+      if (editModal) editModal.style.display = 'none';
     });
   }
 
@@ -1267,15 +1304,21 @@ function setupEventListeners() {
 
   // Admin Modal Buttons
   const adminModal = document.getElementById('admin-modal');
-  document.getElementById('admin-panel-btn').addEventListener('click', () => {
+  addSafeListener('admin-panel-btn', 'click', () => {
     sfx.playClick();
-    adminModal.style.display = 'flex';
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector('.tab-btn[data-tab="form"]').classList.add('active');
-    document.getElementById('add-book-form').style.display = 'flex';
-    document.getElementById('manage-books-tab').style.display = 'none';
-    document.getElementById('shelves-tab').style.display = 'none';
-    lucide.createIcons();
+    if (adminModal) {
+      adminModal.style.display = 'flex';
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const formTab = document.querySelector('.tab-btn[data-tab="form"]');
+      if (formTab) formTab.classList.add('active');
+      const addBookForm = document.getElementById('add-book-form');
+      if (addBookForm) addBookForm.style.display = 'flex';
+      const mBooksTab = document.getElementById('manage-books-tab');
+      if (mBooksTab) mBooksTab.style.display = 'none';
+      const sTab = document.getElementById('shelves-tab');
+      if (sTab) sTab.style.display = 'none';
+      if (window.lucide) lucide.createIcons();
+    }
   });
 
   // Shelf & Category Manager button in top bar
@@ -1296,11 +1339,11 @@ function setupEventListeners() {
     });
   }
 
-  document.getElementById('close-modal-btn').addEventListener('click', () => {
-    adminModal.style.display = 'none';
+  addSafeListener('close-modal-btn', 'click', () => {
+    if (adminModal) adminModal.style.display = 'none';
   });
-  document.getElementById('cancel-add-btn').addEventListener('click', () => {
-    adminModal.style.display = 'none';
+  addSafeListener('cancel-add-btn', 'click', () => {
+    if (adminModal) adminModal.style.display = 'none';
   });
 
   // Admin Modal Tabs
@@ -2280,8 +2323,17 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-// Start application
-window.addEventListener('DOMContentLoaded', () => {
+// Start application safely regardless of when script is parsed
+function startApplication() {
   init();
-  lucide.createIcons();
-});
+  if (window.lucide && window.lucide.createIcons) {
+    try { lucide.createIcons(); } catch (e) {}
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startApplication);
+} else {
+  // DOM is already ready (or script loaded defer/async) - execute immediately!
+  startApplication();
+}

@@ -8,6 +8,27 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+
+  <script>
+    // Detect if page was opened via local file protocol (file:///) instead of server
+    if (window.location.protocol === 'file:') {
+      // Try to redirect to local server if running
+      fetch('http://localhost:5050/api/books', { mode: 'no-cors' })
+        .then(() => {
+          window.location.href = 'http://localhost:5050';
+        })
+        .catch(() => {
+          // Alert user that browser security blocks 3D models over file:///
+          window.addEventListener('DOMContentLoaded', () => {
+            const status = document.getElementById('loading-status');
+            if (status) {
+              status.innerHTML = '<span style="color:#f87171;font-weight:600;">⚠️ ശ്രദ്ധിക്കുക:</span> ഫയൽ നേരിട്ടാണ് (file://) തുറന്നത്. മോഡലുകൾ ലോഡ് ചെയ്യാൻ <b>run_library.bat</b> ഡബിൾ ക്ലിക്ക് ചെയ്യുക (അല്ലെങ്കിൽ <a href="http://localhost:5050" style="color:#38bdf8;text-decoration:underline;">http://localhost:5050</a> തുറക്കുക).';
+            }
+          });
+        });
+    }
+  </script>
+
   <!-- Three.js and GSAP via unpkg / CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -672,6 +693,6 @@
   </div>
 
   <!-- Main JavaScript Application -->
-  <script src="app.js" defer></script>
+  <script src="app.js"></script>
 </body>
 </html>
