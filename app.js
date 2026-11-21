@@ -14,6 +14,7 @@ const state = {
   focusedBookMesh: null,
   inspectedShelf: null,
   isNavigating: false,
+  cameraMode: localStorage.getItem('lib_camera_mode') || 'systematic', // 'systematic' | 'free'
   originalBookTransform: null,
   roomArchitecture: {
     leftWall: null,
@@ -40,6 +41,7 @@ let ambientLight, dirLight, aisleLights = [];
 // Entrance Door variables
 let doorModel = null;
 let doorHingePivot = null;
+let doorHandlePivot = null;
 let isDoorOpen = false;
 let plaqueModel = null;
 
@@ -122,6 +124,115 @@ class SoundFX {
     gain.connect(this.ctx.destination);
     osc.start();
     osc.stop(this.ctx.currentTime + 0.3);
+  }
+  playDoorLatch() {
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(680, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
+
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1200, now);
+    filter.Q.setValueAtTime(3.0, now);
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.13);
+  }
+  playDoorCreak() {
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const carrier = this.ctx.createOscillator();
+    const modulator = this.ctx.createOscillator();
+    const modGain = this.ctx.createGain();
+    const mainGain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+
+    carrier.type = 'sawtooth';
+    carrier.frequency.setValueAtTime(140, now);
+    carrier.frequency.linearRampToValueAtTime(260, now + 0.5);
+    carrier.frequency.linearRampToValueAtTime(180, now + 1.1);
+
+    modulator.type = 'sine';
+    modulator.frequency.setValueAtTime(28, now);
+    modulator.frequency.linearRampToValueAtTime(14, now + 1.1);
+
+    modGain.gain.setValueAtTime(70, now);
+    modGain.gain.linearRampToValueAtTime(20, now + 1.1);
+
+    modulator.connect(carrier.frequency);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(750, now);
+
+    mainGain.gain.setValueAtTime(0.01, now);
+    mainGain.gain.linearRampToValueAtTime(0.14, now + 0.2);
+    mainGain.gain.linearRampToValueAtTime(0.10, now + 0.8);
+    mainGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+    carrier.connect(filter);
+    filter.connect(mainGain);
+    mainGain.connect(this.ctx.destination);
+
+    modulator.start(now);
+    carrier.start(now);
+    modulator.stop(now + 1.25);
+    carrier.stop(now + 1.25);
+  }
+  playDoorClose() {
+    this.init();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    // 1. Solid wooden frame thump (sub-bass / impact)
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(95, now);
+    osc.frequency.exponentialRampToValueAtTime(32, now + 0.22);
+
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.36);
+
+    // 2. Metallic latch bolt snapping shut
+    const snapOsc = this.ctx.createOscillator();
+    const snapGain = this.ctx.createGain();
+    const snapFilter = this.ctx.createBiquadFilter();
+
+    snapOsc.type = 'triangle';
+    snapOsc.frequency.setValueAtTime(1800, now + 0.05);
+    snapOsc.frequency.exponentialRampToValueAtTime(450, now + 0.16);
+
+    snapFilter.type = 'bandpass';
+    snapFilter.frequency.setValueAtTime(2200, now + 0.05);
+
+    snapGain.gain.setValueAtTime(0.001, now);
+    snapGain.gain.setValueAtTime(0.22, now + 0.05);
+    snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+    snapOsc.connect(snapFilter);
+    snapFilter.connect(snapGain);
+    snapGain.connect(this.ctx.destination);
+
+    snapOsc.start(now + 0.05);
+    snapOsc.stop(now + 0.25);
   }
 }
 const sfx = new SoundFX();
@@ -466,30 +577,66 @@ async function loadLayoutAndBooks() {
 // ==========================================================================
 // Entrance Door (5plank_door_light_oak.glb) & Gate Transition
 // ==========================================================================
-function createDoorHeaderPanel() {
-  const existing = scene.getObjectByName('DoorHeaderPanel');
-  if (existing) scene.remove(existing);
+function createDoorFramingPanels() {
+  ['DoorHeaderPanel', 'DoorSidePanelLeft', 'DoorSidePanelRight'].forEach(name => {
+    const existing = scene.getObjectByName(name);
+    if (existing) scene.remove(existing);
+  });
 
-  // Opening is 1.59m wide between wLeft (-0.795) and wRight (+0.795)
-  // Height from 2.22 to 2.64 (0.42m tall), center Y = 2.43, Z = 7.41, thickness = 0.16m
-  const headerGeo = new THREE.BoxGeometry(1.64, 0.44, 0.16);
-  const headerMat = new THREE.MeshStandardMaterial({
+  const wallMat = new THREE.MeshStandardMaterial({
     color: 0xf2f2f4, // Clean white wall material matching Mesh_522 / Mesh_523
     roughness: 0.85,
     metalness: 0.02
   });
-  const headerMesh = new THREE.Mesh(headerGeo, headerMat);
+
+  // 1. Header panel above door: width 1.64m, height 0.30m, thickness 0.16m
+  // Wall opening height is 2.64m, door is 2.36m tall. Header covers from 2.35m to 2.65m
+  const headerGeo = new THREE.BoxGeometry(1.64, 0.30, 0.16);
+  const headerMesh = new THREE.Mesh(headerGeo, wallMat);
   headerMesh.name = 'DoorHeaderPanel';
-  headerMesh.position.set(0, 2.43, 7.41);
+  headerMesh.position.set(0, 2.50, 7.41);
   headerMesh.receiveShadow = true;
   scene.add(headerMesh);
+
+  // 2. Left side architectural wall panel: width 0.28m, height 2.38m, thickness 0.16m
+  // Opening spans X = -0.795 to +0.795. Door width is 1.058m (X = -0.529 to +0.529)
+  // Left gap spans X = -0.795 to -0.529 (center X = -0.66)
+  const leftSideGeo = new THREE.BoxGeometry(0.28, 2.38, 0.16);
+  const leftSideMesh = new THREE.Mesh(leftSideGeo, wallMat);
+  leftSideMesh.name = 'DoorSidePanelLeft';
+  leftSideMesh.position.set(-0.66, 1.19, 7.41);
+  leftSideMesh.receiveShadow = true;
+  scene.add(leftSideMesh);
+
+  // 3. Right side architectural wall panel: width 0.28m, height 2.38m, thickness 0.16m (center X = +0.66)
+  const rightSideGeo = new THREE.BoxGeometry(0.28, 2.38, 0.16);
+  const rightSideMesh = new THREE.Mesh(rightSideGeo, wallMat);
+  rightSideMesh.name = 'DoorSidePanelRight';
+  rightSideMesh.position.set(0.66, 1.19, 7.41);
+  rightSideMesh.receiveShadow = true;
+  scene.add(rightSideMesh);
+}
+
+function updateDoorButtonUI() {
+  const btn = document.getElementById('entrance-cam-btn');
+  if (!btn) return;
+  if (!isDoorOpen) {
+    btn.innerHTML = '<i data-lucide="door-open"></i><span>വാതിൽ തുറക്കുക (Open)</span>';
+    btn.title = "വാതിൽ തുറന്ന് ഉള്ളിലേക്ക് പ്രവേശിക്കുക";
+  } else {
+    btn.innerHTML = '<i data-lucide="door-closed"></i><span>വാതിൽ അടയ്ക്കുക (Close)</span>';
+    btn.title = "വാതിൽ അടച്ച് പുറത്തേക്ക് ഇറങ്ങുക";
+  }
+  if (window.lucide && window.lucide.createIcons) {
+    try { lucide.createIcons(); } catch (e) {}
+  }
 }
 
 function loadDoorModel() {
   if (!THREE.GLTFLoader) return;
 
-  // Create architectural header panel to perfectly seal opening above the door
-  createDoorHeaderPanel();
+  // Create architectural side & header panels to perfectly seal opening with slim tall door
+  createDoorFramingPanels();
 
   const loader = new THREE.GLTFLoader();
   loader.load(
@@ -501,6 +648,9 @@ function loadDoorModel() {
       doorModel.traverse((child) => {
         if (child.name === 'Door_Hinge_Pivot') {
           doorHingePivot = child;
+        }
+        if (child.name === 'Door_Handle_Pivot') {
+          doorHandlePivot = child;
         }
         if (child.isMesh) {
           child.castShadow = true;
@@ -530,15 +680,18 @@ function loadDoorModel() {
         }
       });
 
-      // Wall opening is 1.59m wide. Casing width is 0.962m.
-      // Scale to 1.67m wide to cleanly overlap wall edges by ~4cm on each side (zero gaps!)
-      const scaleX = 1.67 / 0.962;
-      const scaleY = 2.22 / 2.111;
-      doorModel.scale.set(scaleX, scaleY, 1.15);
+      // User requested:
+      // "വാതിലിന് നല്ല തടിയുണ്ട്, തടിയുള്ള വാതിലല്ല എനിക്ക് വേണ്ടേ. എനിക്ക് ഞാൻ ആദ്യം തന്ന പോലത്തെ മോഡലിൻ്റെ മതി, പക്ഷേ കുറച്ച് നീളം വേണം എനിക്ക് വാതിലിന്"
+      // Natural casing width is 0.962m, height is 2.111m, depth is 0.120m.
+      // scaleX: 1.10 -> width 1.058m (door leaf ~0.88m, natural single door proportion)
+      // scaleY: 1.118 -> height 2.36m (tall, stately institutional door)
+      // scaleZ: 0.85 -> slim depth (not bulky/thick)
+      doorModel.scale.set(1.10, 1.118, 0.85);
       doorModel.position.set(0, 0.00, 7.41);
 
       scene.add(doorModel);
-      console.log('Entrance door fitted seamlessly into doorway!');
+      updateDoorButtonUI();
+      console.log('Entrance door fitted seamlessly into doorway with slim natural proportions and increased height!');
     },
     undefined,
     (err) => {
@@ -588,7 +741,7 @@ function loadPlaqueModel() {
 
 function openDoorAndEnter(callback) {
   isDoorOpen = true;
-  sfx.playSwoosh();
+  updateDoorButtonUI();
 
   const overlay = document.getElementById('entrance-gate-overlay');
   if (overlay) overlay.classList.add('hidden');
@@ -598,20 +751,41 @@ function openDoorAndEnter(callback) {
   const tl = gsap.timeline({
     onComplete: () => {
       controls.enabled = true;
+      updateDoorButtonUI();
       if (callback) callback();
     }
   });
 
-  // 1. Swing door hinge open inward into library
+  // Step 1: Depress door handle lever & play mechanical latch click sound
+  tl.call(() => sfx.playDoorLatch(), null, 0);
+  if (doorHandlePivot) {
+    tl.to(doorHandlePivot.rotation, {
+      z: -0.42, // handle rotates downward
+      duration: 0.28,
+      ease: 'power1.inOut'
+    }, 0);
+  }
+
+  // Step 2: Door hinge begins swinging open & play wooden creak sound
+  tl.call(() => sfx.playDoorCreak(), null, 0.28);
   if (doorHingePivot) {
     tl.to(doorHingePivot.rotation, {
       y: -Math.PI * 0.48, // Swing 86 degrees inward
       duration: 1.8,
       ease: 'power2.inOut'
-    }, 0);
+    }, 0.28);
   }
 
-  // 2. Camera glides smoothly forward through doorway into corridor
+  // Step 3: Handle springs back up smoothly
+  if (doorHandlePivot) {
+    tl.to(doorHandlePivot.rotation, {
+      z: 0,
+      duration: 0.25,
+      ease: 'back.out(2)'
+    }, 0.65);
+  }
+
+  // Step 4: Camera glides smoothly forward through doorway into corridor
   tl.to(camera.position, {
     x: 0,
     y: 1.55,
@@ -619,7 +793,7 @@ function openDoorAndEnter(callback) {
     duration: 2.2,
     ease: 'power2.inOut',
     onUpdate: () => controls.update()
-  }, 0.2);
+  }, 0.5);
 
   tl.to(controls.target, {
     x: 0,
@@ -628,25 +802,26 @@ function openDoorAndEnter(callback) {
     duration: 2.0,
     ease: 'power2.out',
     onUpdate: () => controls.update()
-  }, 0.2);
+  }, 0.5);
 }
 
 function closeDoorAndExit(callback) {
   isDoorOpen = false;
-  sfx.playClick();
+  updateDoorButtonUI();
 
   controls.enabled = false;
 
   const tl = gsap.timeline({
     onComplete: () => {
       controls.enabled = true;
+      updateDoorButtonUI();
       const overlay = document.getElementById('entrance-gate-overlay');
       if (overlay) overlay.classList.remove('hidden');
       if (callback) callback();
     }
   });
 
-  // Camera glides back outside to front wall entrance view
+  // Step 1: Camera glides back outside to front wall entrance view
   tl.to(camera.position, {
     x: 0.65,
     y: 1.35,
@@ -665,13 +840,32 @@ function closeDoorAndExit(callback) {
     onUpdate: () => controls.update()
   }, 0);
 
-  // Swing door closed
+  // Step 2: Handle presses down slightly as door swings shut
+  if (doorHandlePivot) {
+    tl.to(doorHandlePivot.rotation, {
+      z: -0.32,
+      duration: 0.25,
+      ease: 'power1.inOut'
+    }, 0.6);
+  }
+
+  // Step 3: Door swings closed
   if (doorHingePivot) {
     tl.to(doorHingePivot.rotation, {
       y: 0,
       duration: 1.4,
-      ease: 'power2.inOut'
-    }, 0.5);
+      ease: 'power2.in'
+    }, 0.6);
+  }
+
+  // Step 4: Solid frame thud & latch snap sound when door seals, and handle springs shut!
+  tl.call(() => sfx.playDoorClose(), null, 2.0);
+  if (doorHandlePivot) {
+    tl.to(doorHandlePivot.rotation, {
+      z: 0,
+      duration: 0.15,
+      ease: 'power2.out'
+    }, 2.0);
   }
 }
 
@@ -1349,12 +1543,28 @@ function focusOnBook(bookMesh) {
 
   // Target book world position
   const targetPos = bookMesh.userData.originalPosition.clone();
-  
+
+  // Rack level eye-height adjustment according to user's specification:
+  // "താഴത്താണെങ്കിൽ താഴോട്ട് പോകണം, മേലോട്ടാണെങ്കിൽ മേലോട്ട് പൊങ്ങണം, നടുവിലാണെങ്കിൽ അവിടെ തന്നെ നിൽക്കണം"
+  let camY = 1.05; // Standard eye-level for middle rack (Rack 3)
+  const rNum = slotData.rack || 3;
+  if (rNum <= 1) {
+    camY = 0.42; // Low angle looking at bottom rack
+  } else if (rNum === 2) {
+    camY = 0.72; // Lower middle rack
+  } else if (rNum === 3) {
+    camY = 1.05; // Middle rack
+  } else if (rNum === 4) {
+    camY = 1.42; // Upper middle rack
+  } else if (rNum >= 5) {
+    camY = 1.78; // Top rack elevated view
+  }
+
   // Clean walkway Z coordinates:
   // Front face walkway is at targetPos.z + 0.85 (south aisle)
-  // Back face walkway is at targetPos.z - 0.85 (north aisle)
+  // Back face walkway is at targetPos.z - 0.85 (north aisle behind shelf row)
   const walkwayZ = isBack ? (targetPos.z - 0.85) : (targetPos.z + 0.85);
-  const finalCamPos = new THREE.Vector3(targetPos.x, Math.max(targetPos.y, 1.25), walkwayZ);
+  const finalCamPos = new THREE.Vector3(targetPos.x, camY, walkwayZ);
   const lookAtTarget = targetPos.clone();
 
   // Disable controls during flight
@@ -1378,65 +1588,106 @@ function focusOnBook(bookMesh) {
     const overlay = document.getElementById('entrance-gate-overlay');
     if (overlay) overlay.classList.add('hidden');
     if (doorHingePivot && !isDoorOpen) {
+      tl.call(() => sfx.playDoorLatch(), null, 0);
+      if (doorHandlePivot) {
+        tl.to(doorHandlePivot.rotation, { z: -0.42, duration: 0.25, ease: 'power1.inOut' }, 0);
+        tl.to(doorHandlePivot.rotation, { z: 0, duration: 0.2, ease: 'back.out(2)' }, 0.5);
+      }
+      tl.call(() => sfx.playDoorCreak(), null, 0.25);
       tl.to(doorHingePivot.rotation, {
         y: -Math.PI * 0.48,
         duration: 1.2,
         ease: 'power2.inOut'
-      }, 0);
+      }, 0.25);
       isDoorOpen = true;
+      updateDoorButtonUI();
     }
   }
 
-  // Step 0: If already deep inside an aisle, smoothly exit back to central corridor (X = 0)
-  if (Math.abs(camera.position.x) > 0.5) {
+  if (state.cameraMode === 'free') {
+    // Mode 2: Free Flight (Direct smooth bezier transition)
+    tl.to(camera.position, {
+      x: finalCamPos.x,
+      y: finalCamPos.y,
+      z: finalCamPos.z,
+      duration: 1.8,
+      ease: 'power2.inOut',
+      onUpdate: () => controls.update()
+    }, isOutside ? 0.6 : 0);
+
+    tl.to(controls.target, {
+      x: lookAtTarget.x,
+      y: lookAtTarget.y,
+      z: lookAtTarget.z,
+      duration: 1.8,
+      ease: 'power2.inOut',
+      onUpdate: () => controls.update()
+    }, isOutside ? 0.6 : 0);
+  } else {
+    // Mode 1 (Default): Systematic Walkway
+    // Step 0: If already deep inside an aisle (|X| > 0.55), smoothly reverse along that aisle back to central corridor (X = 0)
+    if (Math.abs(camera.position.x) > 0.55) {
+      tl.to(camera.position, {
+        x: 0,
+        y: 1.55,
+        duration: 0.75,
+        ease: 'power2.inOut',
+        onUpdate: () => controls.update()
+      });
+      tl.to(controls.target, {
+        x: 0,
+        y: 1.35,
+        z: camera.position.z,
+        duration: 0.5,
+        ease: 'power2.out',
+        onUpdate: () => controls.update()
+      }, '-=0.5');
+    }
+
+    // Step 1: Fly strictly down the central corridor (strictly X = 0) to the exact shelf row walkway Z
+    const travelDistZ = Math.abs(camera.position.z - walkwayZ);
+    const corridorDuration = Math.max(0.7, Math.min(1.4, travelDistZ * 0.25));
     tl.to(camera.position, {
       x: 0,
-      y: 1.6,
-      duration: 0.7,
+      y: 1.55,
+      z: walkwayZ,
+      duration: corridorDuration,
       ease: 'power2.inOut',
       onUpdate: () => controls.update()
     });
+
+    // Step 2: 90-degree orthogonal pivot: Turn into the aisle from central corridor!
+    const lookDirX = targetPos.x < 0 ? -3.0 : 3.0; // Left (-X) or Right (+X)
+    tl.to(controls.target, {
+      x: lookDirX,
+      y: camY,
+      z: walkwayZ,
+      duration: 0.5,
+      ease: 'power2.inOut',
+      onUpdate: () => controls.update()
+    });
+
+    // Step 3: Walk down the aisle directly in front of the book slot, while adjusting vertical camera eye-height
+    const aisleWalkDuration = Math.max(0.6, Math.min(1.2, Math.abs(targetPos.x) * 0.32));
+    tl.to(camera.position, {
+      x: finalCamPos.x,
+      y: finalCamPos.y,
+      z: finalCamPos.z,
+      duration: aisleWalkDuration,
+      ease: 'power2.out',
+      onUpdate: () => controls.update()
+    });
+
+    // Step 4: Lock focus directly onto the book
+    tl.to(controls.target, {
+      x: lookAtTarget.x,
+      y: lookAtTarget.y,
+      z: lookAtTarget.z,
+      duration: 0.45,
+      ease: 'power2.out',
+      onUpdate: () => controls.update()
+    }, '-=0.3');
   }
-
-  // Step 1: Fly strictly along the wide central corridor (strictly X = 0) to the exact row walkway
-  tl.to(camera.position, {
-    x: 0,
-    y: 1.6,
-    z: walkwayZ,
-    duration: 1.2,
-    ease: 'power2.inOut',
-    onUpdate: () => controls.update()
-  });
-
-  // Step 2: Orient camera to look directly into the aisle from central walkway
-  tl.to(controls.target, {
-    x: targetPos.x * 0.6,
-    y: targetPos.y,
-    z: walkwayZ,
-    duration: 0.5,
-    ease: 'power2.out',
-    onUpdate: () => controls.update()
-  }, '-=0.3');
-
-  // Step 3: Glide cleanly along that aisle directly in front of the book slot
-  tl.to(camera.position, {
-    x: finalCamPos.x,
-    y: finalCamPos.y,
-    z: finalCamPos.z,
-    duration: 1.1,
-    ease: 'power2.out',
-    onUpdate: () => controls.update()
-  });
-
-  // Step 4: Lock focus on the book
-  tl.to(controls.target, {
-    x: lookAtTarget.x,
-    y: lookAtTarget.y,
-    z: lookAtTarget.z,
-    duration: 0.7,
-    ease: 'power2.out',
-    onUpdate: () => controls.update()
-  }, '-=0.7');
 }
 
 /**
@@ -1572,11 +1823,15 @@ function onCanvasClick(event) {
 
   if (!raycaster || !camera) return;
 
-  // 0. Check if entrance door was clicked from outside
-  if (doorModel && (!isDoorOpen || camera.position.z > 7.4)) {
+  // 0. Check if entrance door was clicked
+  if (doorModel) {
     const doorIntersects = raycaster.intersectObjects(doorModel.children, true);
     if (doorIntersects.length > 0) {
-      openDoorAndEnter();
+      if (isDoorOpen && camera.position.z <= 7.4) {
+        closeDoorAndExit();
+      } else {
+        openDoorAndEnter();
+      }
       return;
     }
   }
@@ -1676,10 +1931,38 @@ function setupEventListeners() {
   });
 
   // Camera Action Buttons
+  function updateCameraModeUI() {
+    const btn = document.getElementById('camera-mode-btn');
+    const label = document.getElementById('camera-mode-label');
+    if (!btn || !label) return;
+    if (state.cameraMode === 'systematic') {
+      label.textContent = 'സിസ്റ്റമാറ്റിക് പാത്ത്';
+      btn.title = 'നിലവിൽ: സിസ്റ്റമാറ്റിക് പാത്ത് (നടപ്പുവഴിയിലൂടെ കൃത്യമായ പാത). മാറ്റാൻ ക്ലിക്ക് ചെയ്യുക.';
+      btn.innerHTML = '<i data-lucide="footprints"></i><span id="camera-mode-label">സിസ്റ്റമാറ്റിക് പാത്ത്</span>';
+    } else {
+      label.textContent = 'ഫ്രീ ഫ്ലൈറ്റ്';
+      btn.title = 'നിലവിൽ: ഫ്രീ ഫ്ലൈറ്റ് (നേരിട്ടുള്ള സ്മൂത്ത് ഫ്ലൈറ്റ്). മാറ്റാൻ ക്ലിക്ക് ചെയ്യുക.';
+      btn.innerHTML = '<i data-lucide="zap"></i><span id="camera-mode-label">ഫ്രീ ഫ്ലൈറ്റ്</span>';
+    }
+    if (window.lucide && window.lucide.createIcons) {
+      try { lucide.createIcons(); } catch (e) {}
+    }
+  }
+
+  addSafeListener('camera-mode-btn', 'click', () => {
+    state.cameraMode = state.cameraMode === 'systematic' ? 'free' : 'systematic';
+    localStorage.setItem('lib_camera_mode', state.cameraMode);
+    sfx.playClick();
+    updateCameraModeUI();
+  });
+
+  updateCameraModeUI();
+  updateDoorButtonUI();
+
   addSafeListener('entrance-cam-btn', 'click', () => {
     sfx.playClick();
     if (state.focusedBookMesh) putBackBook(false);
-    if (camera.position.z > 8.0) {
+    if (!isDoorOpen) {
       openDoorAndEnter();
     } else {
       closeDoorAndExit();
