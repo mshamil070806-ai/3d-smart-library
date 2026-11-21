@@ -1646,7 +1646,9 @@ function focusOnBook(bookMesh) {
 
     // Step 1: Fly strictly down the central corridor (strictly X = 0) to the exact shelf row walkway Z
     const travelDistZ = Math.abs(camera.position.z - walkwayZ);
-    const corridorDuration = Math.max(0.7, Math.min(1.4, travelDistZ * 0.25));
+    const corridorDuration = Math.max(0.6, Math.min(1.2, travelDistZ * 0.22));
+    const lookAheadZ = walkwayZ + (walkwayZ < camera.position.z ? -1.5 : 1.5);
+
     tl.to(camera.position, {
       x: 0,
       y: 1.55,
@@ -1655,20 +1657,27 @@ function focusOnBook(bookMesh) {
       ease: 'power2.inOut',
       onUpdate: () => controls.update()
     });
-
-    // Step 2: 90-degree orthogonal pivot: Turn into the aisle from central corridor!
-    const lookDirX = targetPos.x < 0 ? -3.0 : 3.0; // Left (-X) or Right (+X)
     tl.to(controls.target, {
-      x: lookDirX,
-      y: camY,
-      z: walkwayZ,
-      duration: 0.5,
+      x: 0,
+      y: 1.35,
+      z: lookAheadZ,
+      duration: corridorDuration * 0.8,
+      ease: 'power2.out',
+      onUpdate: () => controls.update()
+    }, 0);
+
+    // Step 2: Clean 90-degree orthogonal turn - lock directly onto the book (Zero intermediate targets, zero unwanted spin!)
+    tl.to(controls.target, {
+      x: lookAtTarget.x,
+      y: lookAtTarget.y,
+      z: lookAtTarget.z,
+      duration: 0.55,
       ease: 'power2.inOut',
       onUpdate: () => controls.update()
     });
 
-    // Step 3: Walk down the aisle directly in front of the book slot, while adjusting vertical camera eye-height
-    const aisleWalkDuration = Math.max(0.6, Math.min(1.2, Math.abs(targetPos.x) * 0.32));
+    // Step 3: Walk down the aisle directly in front of the book slot, adjusting camera eye height
+    const aisleWalkDuration = Math.max(0.6, Math.min(1.1, Math.abs(targetPos.x) * 0.28));
     tl.to(camera.position, {
       x: finalCamPos.x,
       y: finalCamPos.y,
@@ -1677,16 +1686,6 @@ function focusOnBook(bookMesh) {
       ease: 'power2.out',
       onUpdate: () => controls.update()
     });
-
-    // Step 4: Lock focus directly onto the book
-    tl.to(controls.target, {
-      x: lookAtTarget.x,
-      y: lookAtTarget.y,
-      z: lookAtTarget.z,
-      duration: 0.45,
-      ease: 'power2.out',
-      onUpdate: () => controls.update()
-    }, '-=0.3');
   }
 }
 
