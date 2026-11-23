@@ -1,33 +1,36 @@
 <!DOCTYPE html>
 <html lang="ml">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>3D സ്മാർട്ട് ലൈബ്രറി (Smart 3D Library)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Noto+Sans+Malayalam:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 
   <script>
     // Client error logging to backend server
-    window.onerror = function(msg, url, line, col, error) {
+    window.onerror = function (msg, url, line, col, error) {
       try {
         fetch('/api/client-log', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'ERROR', msg, url, line, col, stack: error ? error.stack : '' })
         });
-      } catch (e) {}
+      } catch (e) { }
     };
-    window.addEventListener('unhandledrejection', function(event) {
+    window.addEventListener('unhandledrejection', function (event) {
       try {
         fetch('/api/client-log', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'UNHANDLED_REJECTION', reason: event.reason ? (event.reason.stack || event.reason.toString()) : '' })
         });
-      } catch (e) {}
+      } catch (e) { }
     });
 
     // Detect if page was opened via local file protocol (file:///) instead of server
@@ -77,7 +80,8 @@
   <script src="vendor/gsap.min.js"></script>
   <script src="vendor/lucide.min.js"></script>
 </head>
-<body>
+
+<body class="at-entrance">
   <!-- 3D Canvas Container -->
   <div id="canvas-container"></div>
 
@@ -97,15 +101,33 @@
     </div>
   </div>
 
-  <!-- Entrance Gate Overlay (Outside View with Door) -->
+  <!-- Entrance Screen Clean UI Overlay (Matches user screenshot) -->
   <div id="entrance-gate-overlay" class="entrance-gate-overlay">
-    <div class="entrance-gate-content">
-      <div class="gate-icon-pulse"><i data-lucide="door-closed"></i></div>
-      <h2>3D സ്മാർട്ട് ലൈബ്രറി</h2>
-      <p>ലൈബ്രറിയുടെ വാതിൽ തുറന്ന് ഉള്ളിലേക്ക് പ്രവേശിക്കുക</p>
-      <button id="gate-enter-btn" class="gate-enter-btn" type="button">
-        <i data-lucide="door-open"></i>
-        <span>വാതിൽ തുറന്ന് പ്രവേശിക്കുക (Enter)</span>
+    <!-- Top-Left: Brand Pill Badge -->
+    <div class="entrance-top-left-brand">
+      <div class="entrance-brand-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="5" y="4" width="4" height="16" rx="1.5" />
+          <rect x="15" y="4" width="4" height="16" rx="1.5" />
+        </svg>
+      </div>
+      <span class="entrance-brand-text" id="entrance-brand-text">3D Smart Library</span>
+    </div>
+
+    <!-- Top-Right: Language Selector Pill (ML / EN) -->
+    <div class="entrance-top-right-lang" id="lang-switch-container">
+      <button class="lang-btn" id="lang-ml-btn" type="button">ML</button>
+      <button class="lang-btn active" id="lang-en-btn" type="button">EN</button>
+    </div>
+
+    <!-- Bottom-Center: Vibrant Purple Enter Button with Sparkle -->
+    <div class="entrance-bottom-center">
+      <button id="gate-enter-btn" class="entrance-enter-btn" type="button">
+        <div class="entrance-door-icon">
+          <i data-lucide="door-open" style="width: 17px; height: 17px;"></i>
+        </div>
+        <span id="entrance-enter-text">Enter Library</span>
+        <span class="entrance-sparkle">✨</span>
       </button>
     </div>
   </div>
@@ -126,12 +148,8 @@
     <div class="search-section">
       <div class="search-input-wrapper">
         <i data-lucide="search" class="search-icon"></i>
-        <input 
-          type="text" 
-          id="search-input" 
-          placeholder="ബുക്കിന്റെ പേര്, ഓതർ, ബാർകോഡ് നമ്പർ ടൈപ്പ് ചെയ്യുക..." 
-          autocomplete="off"
-        />
+        <input type="text" id="search-input" placeholder="ബുക്കിന്റെ പേര്, ഓതർ, ബാർകോഡ് നമ്പർ ടൈപ്പ് ചെയ്യുക..."
+          autocomplete="off" />
         <button id="clear-search-btn" class="clear-btn" title="ക്ലിയർ ചെയ്യുക" style="display: none;">
           <i data-lucide="x"></i>
         </button>
@@ -147,50 +165,114 @@
       </div>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="header-actions">
-      <button id="entrance-cam-btn" class="action-btn" title="വാതിൽ തുറന്ന് ഉള്ളിലേക്ക് പ്രവേശിക്കുക / അടയ്ക്കുക">
-        <i data-lucide="door-open"></i>
-        <span>വാതിൽ തുറക്കുക</span>
-      </button>
-
-      <button id="camera-mode-btn" class="action-btn" title="ക്യാമറ ആനിമേഷൻ മോഡ് (സിസ്റ്റമാറ്റിക് / ഫ്രീ)">
-        <i data-lucide="footprints"></i>
-        <span id="camera-mode-label">സിസ്റ്റമാറ്റിക് പാത്ത്</span>
-      </button>
-
-      <button id="overview-cam-btn" class="action-btn" title="മുകളിൽ നിന്നുള്ള വ്യൂ">
-        <i data-lucide="compass"></i>
-        <span>Overview</span>
-      </button>
-
-      <button id="room-settings-btn" class="action-btn" title="റൂം വീതിയും ചുവരുകളുടെ അകലവും മാറ്റുക">
-        <i data-lucide="maximize-2"></i>
-        <span>റൂം അളവുകൾ (Walls)</span>
-      </button>
-
-      <button id="shelf-mgr-btn" class="action-btn" title="ഷെൽഫുകളുടെ കാറ്റഗറി നിയന്ത്രിക്കുക">
-        <i data-lucide="layers"></i>
-        <span>ഷെൽഫ് & കാറ്റഗറികൾ</span>
-      </button>
-
-      <button id="admin-panel-btn" class="action-btn primary" title="പുതിയ ബുക്ക് ആഡ് ചെയ്യുക">
-        <i data-lucide="plus-circle"></i>
-        <span>ബുക്ക് ആഡ് ചെയ്യുക</span>
-      </button>
-    </div>
+    <!-- 3-Line Hamburger Menu Button (☰) -->
+    <button id="menu-toggle-btn" class="menu-toggle-btn" title="മെനു & സെറ്റിംഗ്സ്" aria-label="Menu">
+      <i data-lucide="menu"></i>
+    </button>
   </header>
 
-  <!-- Category Pills Bar -->
-  <nav class="category-bar">
-    <div class="category-scroll" id="category-pills">
-      <button class="pill active" data-category="all">
-        <i data-lucide="layers"></i>
-        <span>എല്ലാം (All)</span>
+  <!-- 3-Line Hamburger Slide-Out Drawer & Backdrop -->
+  <div id="menu-drawer-backdrop" class="menu-drawer-backdrop"></div>
+  <aside id="menu-drawer" class="menu-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title-wrap">
+        <div class="drawer-icon">
+          <i data-lucide="menu"></i>
+        </div>
+        <div>
+          <h2>മെനു & സെറ്റിംഗ്സ്</h2>
+          <span class="subtext">3D ലൈബ്രറി നിയന്ത്രണങ്ങൾ</span>
+        </div>
+      </div>
+      <button id="close-drawer-btn" class="drawer-close-btn" title="അടയ്ക്കുക">
+        <i data-lucide="x"></i>
       </button>
-      <!-- Injected by JavaScript -->
     </div>
-  </nav>
+
+    <div class="drawer-body">
+      <!-- Section: Navigation & Camera -->
+      <div class="drawer-section">
+        <h4 class="drawer-section-title">
+          <i data-lucide="compass"></i>
+          <span>നാവിഗേഷൻ & ക്യാമറ</span>
+        </h4>
+        <div class="drawer-menu-list">
+          <button id="drawer-door-btn" class="drawer-item-btn">
+            <div class="item-left">
+              <i data-lucide="door-open"></i>
+              <span>വാതിൽ തുറക്കുക / അടയ്ക്കുക</span>
+            </div>
+            <span class="item-tag" id="drawer-door-status">തുറക്കുക</span>
+          </button>
+
+          <button id="drawer-camera-mode-btn" class="drawer-item-btn">
+            <div class="item-left">
+              <i data-lucide="footprints"></i>
+              <span>ക്യാമറ പാത്ത് മോഡ്</span>
+            </div>
+            <span class="item-tag active" id="drawer-camera-mode-status">സിസ്റ്റമാറ്റിക്</span>
+          </button>
+
+          <button id="drawer-overview-btn" class="drawer-item-btn">
+            <div class="item-left">
+              <i data-lucide="eye"></i>
+              <span>മുകളിൽ നിന്നുള്ള വ്യൂ (Overview)</span>
+            </div>
+            <span class="item-shortcut">Top-Down</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Section: Library Management -->
+      <div class="drawer-section">
+        <h4 class="drawer-section-title">
+          <i data-lucide="database"></i>
+          <span>ലൈബ്രറി മാനേജ്‌മെന്റ്</span>
+        </h4>
+        <div class="drawer-menu-list">
+          <button id="drawer-terminal-btn" class="drawer-item-btn highlight-item">
+            <div class="item-left">
+              <i data-lucide="terminal"></i>
+              <span>ഡാറ്റാ ടെർമിനൽ (SQL / Data)</span>
+            </div>
+            <span class="item-badge-sparkle">New ✨</span>
+          </button>
+
+          <button id="drawer-add-book-btn" class="drawer-item-btn">
+            <div class="item-left">
+              <i data-lucide="plus-circle"></i>
+              <span>പുതിയ ബുക്ക് ചേർക്കുക</span>
+            </div>
+          </button>
+
+          <button id="drawer-shelves-btn" class="drawer-item-btn">
+            <div class="item-left">
+              <i data-lucide="layers"></i>
+              <span>ഷെൽഫുകളും കാറ്റഗറികളും</span>
+            </div>
+          </button>
+
+          <button id="drawer-room-btn" class="drawer-item-btn">
+            <div class="item-left">
+              <i data-lucide="maximize-2"></i>
+              <span>റൂം അളവുകൾ (നീളം, വീതി, ഉയരം)</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Section: Categories Filter -->
+      <div class="drawer-section">
+        <h4 class="drawer-section-title">
+          <i data-lucide="bookmark"></i>
+          <span>കാറ്റഗറികളിലേക്ക് പോകുക</span>
+        </h4>
+        <div id="drawer-categories-list" class="drawer-categories-grid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </aside>
 
   <!-- Current Navigation Status Banner (shown during camera flight) -->
   <div id="nav-banner" class="nav-banner" style="display: none;">
@@ -417,7 +499,8 @@
       <div id="shelves-tab" class="tab-content shelves-tab" style="display: none;">
         <div class="shelves-tab-header">
           <div class="shelves-stats">
-            <span class="stat-badge"><i data-lucide="layers"></i> <strong id="total-categories-count">8</strong> കാറ്റഗറികൾ</span>
+            <span class="stat-badge"><i data-lucide="layers"></i> <strong id="total-categories-count">8</strong>
+              കാറ്റഗറികൾ</span>
             <span class="stat-badge"><i data-lucide="library"></i> <strong>40</strong> ഷെൽഫുകൾ (17 റോകൾ)</span>
           </div>
           <button type="button" id="open-add-cat-btn" class="btn primary small-btn">
@@ -613,7 +696,7 @@
       </div>
       <div>
         <h3 id="shelf-inspect-title">ഇടതുഭാഗം - Row 1</h3>
-        <p id="shelf-inspect-subtitle">3 ഷെൽഫുകൾ</p>
+        <p id="shelf-inspect-subtitle">ഷെൽഫ്: Left_Row1_Shelf1</p>
       </div>
       <button id="close-shelf-inspect-btn" class="close-card-btn">
         <i data-lucide="x"></i>
@@ -626,8 +709,14 @@
         <span id="shelf-current-cat-badge" class="cat-pill-badge">നോവലുകൾ</span>
       </div>
 
-      <!-- Category Mode Toggle -->
-      <div class="form-group" style="margin-top: 12px;">
+      <!-- Direct Category Name Input (Type directly) -->
+      <div class="form-group" style="margin-top: 10px;">
+        <label for="shelf-cat-custom-name" style="font-weight: 600; font-size: 0.82rem; color: #f1f5f9; display: block; margin-bottom: 4px;">കാറ്റഗറിയുടെ പേര് നേരിട്ട് ടൈപ്പ് ചെയ്യുക (Type Name):</label>
+        <input type="text" id="shelf-cat-custom-name" placeholder="ഉദാ: സാഹിത്യം / ശാസ്ത്രം..." style="width: 100%; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 7px 10px; color: #f8fafc; font-size: 0.88rem;" />
+      </div>
+
+      <!-- Category Mode Toggle (Single vs Front/Back Separate) -->
+      <div class="form-group" style="margin-top: 10px;">
         <label style="font-weight: 600; font-size: 0.82rem; color: #f1f5f9; display: block; margin-bottom: 6px;">കാറ്റഗറി രീതി (Category Setup):</label>
         <div style="display: flex; gap: 10px; background: rgba(15, 23, 42, 0.6); padding: 6px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08);">
           <label style="flex: 1; font-size: 0.78rem; display: flex; align-items: center; gap: 6px; cursor: pointer; color: #e2e8f0;">
@@ -636,14 +725,14 @@
           </label>
           <label style="flex: 1; font-size: 0.78rem; display: flex; align-items: center; gap: 6px; cursor: pointer; color: #e2e8f0;">
             <input type="radio" name="shelf-cat-mode" id="mode-split" value="split" style="accent-color: #3b82f6;">
-            <span>മുൻപും പിൻപും വെവ്വേറെ (Separate)</span>
+            <span>മുൻപും പിൻപും വെവ്വേറെ (Front & Back)</span>
           </label>
         </div>
       </div>
 
       <!-- Single Category Select -->
       <div id="single-cat-wrap" class="form-group" style="margin-top: 10px;">
-        <label for="shelf-quick-cat-select">കാറ്റഗറി തിരഞ്ഞെടുക്കുക (Category):</label>
+        <label for="shelf-quick-cat-select" style="font-size: 0.8rem; color: #94a3b8;">ലിസ്റ്റിൽ നിന്നും തിരഞ്ഞെടുക്കുക (Choose from List):</label>
         <select id="shelf-quick-cat-select">
           <!-- Populated by JS -->
         </select>
@@ -678,7 +767,7 @@
     </div>
   </div>
 
-  <!-- Room & Wall Settings Modal -->
+  <!-- Room & Wall Settings Modal (Expanded Width, Length & Height) -->
   <div id="room-settings-modal" class="modal-backdrop" style="display: none;">
     <div class="modal-dialog small-dialog">
       <div class="modal-header">
@@ -687,8 +776,8 @@
             <i data-lucide="maximize-2"></i>
           </div>
           <div>
-            <h2>റൂം & ചുവരുകളുടെ അകലം</h2>
-            <p>ഷെൽഫും ചുവരും തമ്മിലുള്ള അകലവും റൂം വീതിയും മാറ്റുക</p>
+            <h2>റൂം അളവുകൾ (നീളം, വീതി, ഉയരം)</h2>
+            <p>ചുമരുകളുടെ ഉയരവും, റൂമിന്റെ നീളവും വീതിയും മാറ്റുക</p>
           </div>
         </div>
         <button id="close-room-modal-btn" class="close-btn">
@@ -696,40 +785,51 @@
         </button>
       </div>
 
-      <div class="modal-body" style="padding: 24px;">
-        <div class="form-group">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <label style="font-weight: 600; color: #f1f5f9; font-size: 0.92rem;">ചുമരും ഷെൽഫും തമ്മിലുള്ള അകലം (Distance):</label>
-            <span id="wall-distance-value" style="font-weight: 800; color: #38bdf8; font-size: 1rem; font-family: monospace;">0.80 m (80 cm)</span>
+      <div class="modal-body" style="padding: 20px;">
+        <!-- Slider 1: Width (X-axis wall distance) -->
+        <div class="form-group" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="font-weight: 600; color: #f1f5f9; font-size: 0.88rem;">റൂം വീതി / ഇടത്-വലത് അകലം (Width):</label>
+            <span id="wall-distance-value" style="font-weight: 800; color: #38bdf8; font-size: 0.95rem; font-family: monospace;">0.80 m</span>
           </div>
-          <input 
-            type="range" 
-            id="wall-distance-slider" 
-            min="0.09" 
-            max="3.00" 
-            step="0.05" 
-            value="0.80"
-            style="width: 100%; cursor: pointer; accent-color: #3b82f6;"
-          />
-          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; margin-top: 6px;">
+          <input type="range" id="wall-distance-slider" min="0.09" max="4.00" step="0.05" value="0.80" style="width: 100%; cursor: pointer; accent-color: #38bdf8;" />
+          <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8; margin-top: 4px;">
             <span>0.09 m (മിനിമം)</span>
-            <span>1.50 m (ഇടത്തരം)</span>
-            <span>3.00 m (വിശാലം)</span>
+            <span>0.80 m (യഥാർത്ഥം ★)</span>
+            <span>4.00 m (വിശാലം)</span>
           </div>
         </div>
 
-        <div style="margin-top: 18px;">
-          <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; font-weight: 500;">തയ്യാറാക്കിയ അകലങ്ങൾ (Quick Presets):</label>
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
-            <button type="button" class="btn secondary preset-dist-btn" data-dist="0.09" style="font-size: 0.78rem; padding: 6px 4px;">9 cm (യഥാർത്ഥം)</button>
-            <button type="button" class="btn secondary preset-dist-btn" data-dist="0.50" style="font-size: 0.78rem; padding: 6px 4px;">50 cm</button>
-            <button type="button" class="btn secondary preset-dist-btn" data-dist="0.80" style="font-size: 0.78rem; padding: 6px 4px; border-color: #3b82f6; color: #38bdf8;">80 cm ★</button>
-            <button type="button" class="btn secondary preset-dist-btn" data-dist="1.50" style="font-size: 0.78rem; padding: 6px 4px;">1.5 മീറ്റർ</button>
+        <!-- Slider 2: Length (Z-axis room depth) -->
+        <div class="form-group" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="font-weight: 600; color: #f1f5f9; font-size: 0.88rem;">റൂം നീളം / ബാക്ക് വാൾ അകലം (Length):</label>
+            <span id="wall-length-value" style="font-weight: 800; color: #a78bfa; font-size: 0.95rem; font-family: monospace;">0.00 m</span>
+          </div>
+          <input type="range" id="wall-length-slider" min="0.00" max="4.00" step="0.05" value="0.00" style="width: 100%; cursor: pointer; accent-color: #a78bfa;" />
+          <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8; margin-top: 4px;">
+            <span>സാധാരണ നീളം (0 m)</span>
+            <span>+2.00 മീറ്റർ</span>
+            <span>+4.00 മീറ്റർ</span>
           </div>
         </div>
 
-        <div style="margin-top: 18px; padding: 12px; background: rgba(15, 23, 42, 0.6); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); font-size: 0.8rem; color: #94a3b8; line-height: 1.5;">
-          💡 സ്ലൈഡർ നീക്കുമ്പോൾ തത്സമയം 3D-യിൽ ഇരുവശത്തെയും ചുമരുകളും തറയും അകലേക്ക് നീങ്ങുന്നതും വികസിക്കുന്നതും കാണാം.
+        <!-- Slider 3: Height (Y-axis wall & ceiling height) -->
+        <div class="form-group" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label style="font-weight: 600; color: #f1f5f9; font-size: 0.88rem;">ചുമരുകളുടെയും സീലിംഗിന്റെയും ഉയരം (Height):</label>
+            <span id="wall-height-value" style="font-weight: 800; color: #34d399; font-size: 0.95rem; font-family: monospace;">2.68 m</span>
+          </div>
+          <input type="range" id="wall-height-slider" min="2.40" max="5.00" step="0.05" value="2.68" style="width: 100%; cursor: pointer; accent-color: #34d399;" />
+          <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8; margin-top: 4px;">
+            <span>2.40 m (ലോ)</span>
+            <span>2.68 m (സ്റ്റാൻഡേർഡ് ★)</span>
+            <span>5.00 m (ഹൈ സീലിംഗ്)</span>
+          </div>
+        </div>
+
+        <div style="padding: 10px; background: rgba(15, 23, 42, 0.6); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); font-size: 0.78rem; color: #94a3b8; line-height: 1.5;">
+          💡 സ്ലൈഡറുകൾ മാറ്റുമ്പോൾ റൂമിന്റെ നീളവും വീതിയും ഉയരവും തത്സമയം 3D-യിൽ വികസിക്കുന്നത് കാണാം.
         </div>
       </div>
 
@@ -742,15 +842,82 @@
     </div>
   </div>
 
-  <!-- Bottom Helper Bar -->
-  <div class="bottom-helper">
-    <div class="helper-pill">
-      <i data-lucide="mouse-pointer"></i>
-      <span>മൗസ് കൊണ്ട് ലൈബ്രറി ചുറ്റി കാണാം (Orbit) • ബുക്കിൽ ക്ലിക്ക് ചെയ്താൽ അത് മുന്നിൽ വരും</span>
+  <!-- Data Ingestion Terminal Modal (SQL & Structured Data Ingestion) -->
+  <div id="data-terminal-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog large-dialog" style="max-width: 780px;">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon" style="background: rgba(168, 85, 247, 0.2); color: #c084fc;">
+            <i data-lucide="terminal"></i>
+          </div>
+          <div>
+            <h2>ഡാറ്റാ ടെർമിനൽ (SQL & സ്ട്രക്ചേർഡ് ഡാറ്റ)</h2>
+            <p>SQL INSERT ക്വറികളോ, JSON അല്ലെങ്കിൽ CSV ലിസ്റ്റോ പേസ്റ്റ് ചെയ്യുക. സിസ്റ്റം ഓട്ടോമാറ്റിക്കായി പാർസ് ചെയ്ത് ഷെൽഫിൽ ബുക്കുകൾ പ്ലേസ് ചെയ്യും.</p>
+          </div>
+        </div>
+        <button id="close-terminal-modal-btn" class="close-btn">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 0.8rem; color: #94a3b8;">സാമ്പിൾ ടെംപ്ലേറ്റുകൾ:</span>
+          <div style="display: flex; gap: 6px;">
+            <button type="button" id="template-sql-btn" class="btn secondary small-btn" style="padding: 4px 8px; font-size: 0.75rem;">📄 സാമ്പിൾ SQL</button>
+            <button type="button" id="template-csv-btn" class="btn secondary small-btn" style="padding: 4px 8px; font-size: 0.75rem;">📊 സാമ്പിൾ CSV</button>
+            <button type="button" id="template-json-btn" class="btn secondary small-btn" style="padding: 4px 8px; font-size: 0.75rem;">📋 സാമ്പിൾ JSON</button>
+            <button type="button" id="clear-terminal-btn" class="btn secondary small-btn" style="padding: 4px 8px; font-size: 0.75rem; color: #f87171;">ക്ലിയർ</button>
+          </div>
+        </div>
+
+        <div style="position: relative;">
+          <textarea id="terminal-data-input" rows="8" style="width: 100%; font-family: monospace; font-size: 0.85rem; background: #0b0f19; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 12px; color: #38bdf8; line-height: 1.5; resize: vertical;" placeholder="SQL INSERT, CSV, അല്ലെങ്കിൽ JSON ഡാറ്റ ഇവിടെ പേസ്റ്റ് ചെയ്യുക...
+ഉദാ:
+INSERT INTO books (title, author, category, barcode, book_number) VALUES
+('ആടുജീവിതം', 'ബെന്യാമിൻ', 'നോവലുകൾ', '978817208101', 'B-101'),
+('രണ്ടാമൂഴം', 'എം.ടി. വാസുദേവൻ നായർ', 'നോവലുകൾ', '978817208102', 'B-102');"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 12px;">
+          <button type="button" id="analyze-terminal-data-btn" class="btn secondary" style="flex: 1;">
+            <i data-lucide="cpu"></i>
+            <span>ഡാറ്റ വിശകലനം ചെയ്യുക (Analyze & Preview)</span>
+          </button>
+          <button type="button" id="import-terminal-books-btn" class="btn primary" style="flex: 1;" disabled>
+            <i data-lucide="sparkles"></i>
+            <span>ഷെൽഫിലേക്ക് ബുക്കുകൾ ചേർക്കുക (<span id="parsed-books-count">0</span>)</span>
+          </button>
+        </div>
+
+        <!-- Live Parsed Preview Table -->
+        <div id="terminal-preview-section" style="display: none; margin-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h4 style="font-size: 0.85rem; color: #f1f5f9; font-weight: 600;">പരിശോധിച്ച വിവരങ്ങൾ (Parsed Books Preview)</h4>
+            <span style="font-size: 0.75rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(56, 189, 248, 0.3);">പ്ലേസ്‌മെന്റ്: മിഡിൽ റാക്ക് (Rack 3) ➔ മുകൾഭാഗം ➔ താഴെഭാഗം</span>
+          </div>
+          <div class="manage-table-wrapper" style="max-height: 200px; overflow-y: auto;">
+            <table class="manage-table">
+              <thead>
+                <tr>
+                  <th>ടൈറ്റിൽ</th>
+                  <th>എഴുത്തുകാരൻ</th>
+                  <th>കാറ്റഗറി</th>
+                  <th>ബാർകോഡ്</th>
+                  <th>ബുക്ക് നമ്പർ</th>
+                  <th>ടാർഗറ്റ് റാക്ക്</th>
+                </tr>
+              </thead>
+              <tbody id="terminal-preview-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Main JavaScript Application -->
   <script src="app.js?v=3.0"></script>
 </body>
+
 </html>

@@ -1234,16 +1234,14 @@ body {
 }
 
 /* ==========================================================================
-   Entrance Door Gate Overlay (Outside View)
+   Entrance Door Gate Overlay (Clean UI matching user screenshot)
    ========================================================================== */
 .entrance-gate-overlay {
-  position: absolute;
-  bottom: 70px;
-  left: 50%;
-  transform: translateX(-50%);
+  position: fixed;
+  inset: 0;
   z-index: 100;
-  pointer-events: auto;
-  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s;
+  pointer-events: none;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s;
 }
 
 .entrance-gate-overlay.hidden {
@@ -1252,71 +1250,466 @@ body {
   pointer-events: none;
 }
 
-.entrance-gate-content {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 20px;
-  padding: 24px 36px;
-  text-align: center;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.55), 0 0 40px rgba(99, 102, 241, 0.25);
-  min-width: 320px;
+/* While at entrance, hide library top-bar and category-bar */
+body.at-entrance .top-bar {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(-16px);
 }
 
-.gate-icon-pulse {
-  width: 50px;
-  height: 50px;
+body.at-entrance .category-bar {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translateY(-12px);
+}
+
+body.at-entrance .bottom-helper {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.top-bar, .category-bar {
+  transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease;
+}
+
+/* Top-Left: Brand Pill Badge */
+.entrance-top-left-brand {
+  position: absolute;
+  top: 22px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fbf8f2;
+  border: 1px solid rgba(215, 208, 195, 0.75);
+  border-radius: 9999px;
+  padding: 6px 20px 6px 6px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.entrance-brand-icon {
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: rgba(99, 102, 241, 0.18);
-  border: 1px solid rgba(99, 102, 241, 0.4);
-  color: #818cf8;
+  background: #7c3aed;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 12px;
-  animation: pulseDoor 2.2s infinite;
-}
-
-@keyframes pulseDoor {
-  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
-  70% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(99, 102, 241, 0); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-}
-
-.entrance-gate-content h2 {
-  font-size: 1.3rem;
-  font-weight: 700;
   color: #ffffff;
-  margin-bottom: 6px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
+.entrance-brand-text {
+  font-family: 'Manrope', 'Noto Sans Malayalam', sans-serif;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #1c1917;
   letter-spacing: -0.01em;
 }
 
-.entrance-gate-content p {
-  font-size: 0.88rem;
-  color: #94a3b8;
-  margin-bottom: 18px;
+/* Top-Right: Language Selector Pill (ML / EN) */
+.entrance-top-right-lang {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1.5px solid #27272a;
+  border-radius: 9999px;
+  padding: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  pointer-events: auto;
+  user-select: none;
 }
 
-.gate-enter-btn {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+.lang-btn {
+  background: transparent;
   border: none;
-  color: #ffffff;
+  border-radius: 9999px;
+  padding: 5px 14px;
+  font-family: inherit;
+  font-size: 0.88rem;
   font-weight: 600;
-  font-size: 0.95rem;
-  padding: 12px 28px;
-  border-radius: 12px;
+  color: #3f3f46;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.45);
   transition: all 0.2s ease;
 }
 
-.gate-enter-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.65);
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+.lang-btn:hover {
+  color: #000000;
 }
+
+.lang-btn.active {
+  background: #7c3aed;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+}
+
+/* Bottom-Center: Enter Button */
+.entrance-bottom-center {
+  position: absolute;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+
+.entrance-enter-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #9333ea 0%, #7c3aed 55%, #6d28d9 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 9999px;
+  padding: 13px 32px 13px 20px;
+  color: #ffffff;
+  font-family: 'Manrope', 'Noto Sans Malayalam', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.5), 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.entrance-enter-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 16px 38px rgba(124, 58, 237, 0.65), 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.entrance-enter-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.entrance-door-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.entrance-sparkle {
+  font-size: 1.15rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+}
+
+/* ==========================================================================
+   3-Line Hamburger Menu & Slide-Out Drawer
+   ========================================================================== */
+.menu-toggle-btn {
+  width: 48px;
+  height: 48px;
+  background: var(--bg-card);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f8fafc;
+  cursor: pointer;
+  box-shadow: var(--shadow-glass);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.menu-toggle-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: #6366f1;
+  transform: scale(1.05);
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.35);
+}
+
+.menu-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.menu-toggle-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Drawer Backdrop */
+.menu-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.menu-drawer-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Slide-Out Drawer Sheet */
+.menu-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  max-width: 92vw;
+  height: 100vh;
+  background: rgba(13, 17, 27, 0.95);
+  backdrop-filter: blur(28px);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 2600;
+  box-shadow: -12px 0 45px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.menu-drawer.active {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.drawer-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawer-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4f46e5, #9333ea);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.drawer-title-wrap h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.2;
+}
+
+.drawer-title-wrap .subtext {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.drawer-close-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.drawer-close-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.drawer-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #38bdf8;
+  margin-bottom: 10px;
+}
+
+.drawer-section-title svg {
+  width: 15px;
+  height: 15px;
+}
+
+.drawer-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawer-item-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: #e2e8f0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.drawer-item-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(99, 102, 241, 0.4);
+  transform: translateX(-2px);
+  color: #ffffff;
+}
+
+.drawer-item-btn .item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.drawer-item-btn .item-left svg {
+  width: 18px;
+  height: 18px;
+  color: #818cf8;
+}
+
+.drawer-item-btn .item-tag {
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.drawer-item-btn .item-tag.active {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+}
+
+.drawer-item-btn .item-shortcut {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.drawer-item-btn.highlight-item {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(99, 102, 241, 0.12));
+  border-color: rgba(168, 85, 247, 0.35);
+}
+
+.drawer-item-btn.highlight-item:hover {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.22), rgba(99, 102, 241, 0.22));
+  border-color: rgba(168, 85, 247, 0.6);
+}
+
+.drawer-item-btn.highlight-item .item-left svg {
+  color: #c084fc;
+}
+
+.item-badge-sparkle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #a855f7, #6366f1);
+  color: #ffffff;
+  padding: 3px 8px;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
+}
+
+/* Drawer Categories Grid */
+.drawer-categories-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.drawer-cat-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.drawer-cat-chip:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #ffffff;
+}
+
+.drawer-cat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Preset pill buttons in Terminal */
+.preset-pill {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.preset-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.preset-pill.clear:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
 

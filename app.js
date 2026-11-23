@@ -14,6 +14,7 @@ const state = {
   focusedBookMesh: null,
   inspectedShelf: null,
   isNavigating: false,
+  isOverviewMode: false,
   cameraMode: localStorage.getItem('lib_camera_mode') || 'systematic', // 'systematic' | 'free'
   originalBookTransform: null,
   roomArchitecture: {
@@ -23,7 +24,11 @@ const state = {
     backWall: null,
     frontLeftWall: null,
     frontRightWall: null,
-    wallDistance: 0.80
+    ceiling: null,
+    wallDistance: parseFloat(localStorage.getItem('smart_library_wall_distance')) || 0.80,
+    wallLength: parseFloat(localStorage.getItem('smart_library_wall_length')) || 0.00,
+    wallHeight: parseFloat(localStorage.getItem('smart_library_wall_height')) || 2.68,
+    ceilingY: parseFloat(localStorage.getItem('smart_library_wall_height')) || 2.68
   }
 };
 
@@ -62,7 +67,7 @@ class SoundFX {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     const filter = this.ctx.createBiquadFilter();
-    
+
     osc.type = 'sine';
     osc.frequency.setValueAtTime(140, this.ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(320, this.ctx.currentTime + 0.35);
@@ -252,7 +257,7 @@ function addSafeListener(id, event, handler) {
 // ==========================================================================
 async function init() {
   console.log('3D Smart Library initializing...');
-  
+
   // 1. Initialize 3D Engine & Scene first
   let threeOk = false;
   try {
@@ -333,7 +338,7 @@ function createRobustRenderer(container) {
             return r3;
           }
         }
-      } catch (errCtx) {}
+      } catch (errCtx) { }
     }
   } catch (e) {
     console.warn('Strategy 3 (Manual context) failed:', e);
@@ -353,7 +358,7 @@ function initThree() {
 
   // Camera - Positioned outside facing front wall, entrance door & memorial plaque
   camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 80);
-  camera.position.set(0.65, 1.35, 10.3);
+  camera.position.set(0.35, 1.36, 9.8);
 
   // Group to hold all dynamic 3D books
   if (!booksGroup) booksGroup = new THREE.Group();
@@ -400,10 +405,15 @@ function initThree() {
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
+    controls.minPolarAngle = 0.20; // Don't flip over head into roof
     controls.maxPolarAngle = Math.PI / 2 + 0.02; // Don't go below floor
     controls.minDistance = 0.4;
-    controls.maxDistance = 26;
-    controls.target.set(0.65, 1.25, 7.45); // Focus on entrance door and memorial plaque
+    controls.maxDistance = 22;
+    controls.target.set(0.35, 1.34, 7.45); // Focus on entrance door and memorial plaque
+    // Freeze rotation/zoom at entrance screen as requested by user
+    if (document.body.classList.contains('at-entrance')) {
+      controls.enabled = false;
+    }
     controls.update();
   }
 
@@ -428,7 +438,8 @@ function createArchitecturalCeiling() {
   const ceilingMat = new THREE.MeshStandardMaterial({
     color: 0x1f2430, // Clean deep modern architectural ceiling
     roughness: 0.8,
-    metalness: 0.1
+    metalness: 0.1,
+    side: THREE.DoubleSide // Solid from both sides
   });
   const ceilingMesh = new THREE.Mesh(ceilingGeo, ceilingMat);
   ceilingMesh.position.set(0, 2.68, 0);
@@ -499,20 +510,20 @@ function setupLighting() {
   });
 
   // Exterior entrance architectural warm lighting
-  const entranceSpot = new THREE.SpotLight(0xfffaea, 2.8, 14, Math.PI / 3.2, 0.5, 1.2);
-  entranceSpot.position.set(0, 2.7, 9.2);
-  entranceSpot.target.position.set(0, 1.15, 7.41);
+  const entranceSpot = new THREE.SpotLight(0xfffaea, 3.2, 16, Math.PI / 3.0, 0.45, 1.2);
+  entranceSpot.position.set(0.35, 2.7, 9.4);
+  entranceSpot.target.position.set(0.35, 1.35, 7.41);
   scene.add(entranceSpot);
   scene.add(entranceSpot.target);
 
-  const entranceFill = new THREE.PointLight(0xfff3df, 1.2, 8);
-  entranceFill.position.set(0, 1.7, 8.8);
+  const entranceFill = new THREE.PointLight(0xfff5e6, 1.4, 10);
+  entranceFill.position.set(0.35, 1.7, 8.8);
   scene.add(entranceFill);
 
   // Memorial Plaque accent spotlight
-  const plaqueSpot = new THREE.SpotLight(0xfff6e8, 2.2, 8, Math.PI / 3.5, 0.4, 1.0);
-  plaqueSpot.position.set(1.72, 2.65, 8.8);
-  plaqueSpot.target.position.set(1.72, 1.35, 7.52);
+  const plaqueSpot = new THREE.SpotLight(0xfff6e8, 2.4, 8, Math.PI / 3.5, 0.4, 1.0);
+  plaqueSpot.position.set(1.68, 2.65, 8.8);
+  plaqueSpot.target.position.set(1.68, 1.35, 7.52);
   scene.add(plaqueSpot);
   scene.add(plaqueSpot.target);
 }
@@ -532,7 +543,7 @@ async function loadLayoutAndBooks() {
     try {
       const layoutRes = await fetch('/api/layout');
       if (layoutRes.ok) layoutData = await layoutRes.json();
-    } catch (e) {}
+    } catch (e) { }
 
     if (!layoutData || !layoutData.categories) {
       const localRes = await fetch('library_layout.json');
@@ -584,8 +595,8 @@ function createDoorFramingPanels() {
   });
 
   const wallMat = new THREE.MeshStandardMaterial({
-    color: 0xf2f2f4, // Clean white wall material matching Mesh_522 / Mesh_523
-    roughness: 0.85,
+    color: 0xf5f3ee, // Warm architectural ivory white matching user picture
+    roughness: 0.88,
     metalness: 0.02
   });
 
@@ -628,7 +639,7 @@ function updateDoorButtonUI() {
     btn.title = "വാതിൽ അടച്ച് പുറത്തേക്ക് ഇറങ്ങുക";
   }
   if (window.lucide && window.lucide.createIcons) {
-    try { lucide.createIcons(); } catch (e) {}
+    try { lucide.createIcons(); } catch (e) { }
   }
 }
 
@@ -657,8 +668,8 @@ function loadDoorModel() {
           child.receiveShadow = true;
           if (child.material) {
             // Check if metal hardware (handles, rosettes, hinges, latch)
-            const isMetal = child.name.includes('Handle') || child.name.includes('Hinge') || 
-                            child.name.includes('Latch') || (child.material.name && (child.material.name.includes('Metal') || child.material.name.includes('Hardware') || child.material.name.includes('Steel')));
+            const isMetal = child.name.includes('Handle') || child.name.includes('Hinge') ||
+              child.name.includes('Latch') || (child.material.name && (child.material.name.includes('Metal') || child.material.name.includes('Hardware') || child.material.name.includes('Steel')));
             if (isMetal) {
               child.material.metalness = 0.95;
               child.material.roughness = 0.18;
@@ -741,6 +752,8 @@ function loadPlaqueModel() {
 
 function openDoorAndEnter(callback) {
   isDoorOpen = true;
+  document.body.classList.remove('at-entrance');
+  state.isOverviewMode = false;
   updateDoorButtonUI();
 
   const overlay = document.getElementById('entrance-gate-overlay');
@@ -813,7 +826,9 @@ function closeDoorAndExit(callback) {
 
   const tl = gsap.timeline({
     onComplete: () => {
-      controls.enabled = true;
+      document.body.classList.add('at-entrance');
+      controls.enabled = false; // Freeze orbit controls at entrance
+      state.isOverviewMode = false;
       updateDoorButtonUI();
       const overlay = document.getElementById('entrance-gate-overlay');
       if (overlay) overlay.classList.remove('hidden');
@@ -821,19 +836,19 @@ function closeDoorAndExit(callback) {
     }
   });
 
-  // Step 1: Camera glides back outside to front wall entrance view
+  // Step 1: Camera glides back outside to front wall entrance view (Matches user screenshot)
   tl.to(camera.position, {
-    x: 0.65,
-    y: 1.35,
-    z: 10.3,
+    x: 0.35,
+    y: 1.36,
+    z: 9.8,
     duration: 1.8,
     ease: 'power2.inOut',
     onUpdate: () => controls.update()
   }, 0);
 
   tl.to(controls.target, {
-    x: 0.65,
-    y: 1.25,
+    x: 0.35,
+    y: 1.34,
     z: 7.45,
     duration: 1.8,
     ease: 'power2.inOut',
@@ -897,6 +912,26 @@ function loadLibraryModel() {
       clearTimeout(slowWarningTimer);
       try {
         const model = gltf.scene;
+        let standardShelfWoodMat = null;
+        let standardShelfDarkSlotMat = null;
+        let standardShelfLabelMat = null;
+        let standardShelfSteelMat = null;
+
+        // Pass 1: Catalog standard full shelf materials (Teak_Wood_Mat.006, etc.)
+        model.traverse((child) => {
+          if (child.isMesh && child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach((m) => {
+              if (!m || !m.name) return;
+              if (m.name.includes('Teak_Wood_Mat.006')) standardShelfWoodMat = m;
+              if (m.name.includes('Adjustment_Slot_Dark_Mat.001')) standardShelfDarkSlotMat = m;
+              if (m.name.includes('White_Category_Label_Mat.003')) standardShelfLabelMat = m;
+              if (m.name.includes('Grey_Powder_Steel_Mat.006')) standardShelfSteelMat = m;
+            });
+          }
+        });
+
+        // Pass 2: Traverse to apply materials, shadows, reflections
         model.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;
@@ -912,12 +947,29 @@ function loadLibraryModel() {
               }
             }
 
-            // Shelf wooden finish (Teak wood): Rich reflections
-            if (child.isMesh && (child.name.includes('Shelf') || child.name.includes('Model'))) {
-              if (child.material) {
-                child.material.roughness = 0.22;
-                child.material.metalness = 0.12;
+            // Standardize half-shelf materials to match full shelves exactly
+            if (child.name === 'Right_Row3_Shelf2_HALF_SHELF_1Bay_5Rows_Model' || child.name.includes('HALF_SHELF')) {
+              if (Array.isArray(child.material)) {
+                if (standardShelfWoodMat) child.material[0] = standardShelfWoodMat;
+                if (standardShelfDarkSlotMat) child.material[1] = standardShelfDarkSlotMat;
+                if (standardShelfLabelMat) child.material[2] = standardShelfLabelMat;
+                if (standardShelfSteelMat) child.material[3] = standardShelfSteelMat;
+              } else if (child.material) {
+                if (standardShelfWoodMat && child.material.name.includes('Teak')) {
+                  child.material = standardShelfWoodMat;
+                }
               }
+            }
+
+            // Shelf wooden finish (Teak wood): Rich reflections
+            if (child.name.includes('Shelf') || child.name.includes('Model')) {
+              const mats = Array.isArray(child.material) ? child.material : [child.material];
+              mats.forEach((m) => {
+                if (m && m.name && m.name.includes('Teak')) {
+                  m.roughness = 0.22;
+                  m.metalness = 0.12;
+                }
+              });
             }
 
             // Room Walls: Soft architectural matte finish
@@ -937,14 +989,30 @@ function loadLibraryModel() {
           }
         });
 
+        // Ensure standard shelf wood material has proper reflections
+        if (standardShelfWoodMat) {
+          standardShelfWoodMat.roughness = 0.22;
+          standardShelfWoodMat.metalness = 0.12;
+        }
+
         // Perfectly fit and level half-shelf in the center gap between Shelf 1 and Shelf 3
         const halfShelfParent = model.getObjectByName('Right_Row3_Shelf2_HALF_SHELF_1Bay_5Rows');
         if (halfShelfParent) {
-          halfShelfParent.position.set(4.275, 0, -3.101); // Centers perfectly at X=4.275 and flush at Z=-3.101
+          halfShelfParent.position.set(4.275, -0.0575, -3.101); // -0.0575 perfectly levels top at 2.0425m, flush with full shelves!
         }
         const halfShelfMesh = model.getObjectByName('Right_Row3_Shelf2_HALF_SHELF_1Bay_5Rows_Model');
         if (halfShelfMesh) {
           halfShelfMesh.position.set(0, 0, 0); // Mesh local origin at 0
+          if (standardShelfWoodMat) {
+            if (Array.isArray(halfShelfMesh.material)) {
+              halfShelfMesh.material[0] = standardShelfWoodMat;
+              if (standardShelfDarkSlotMat) halfShelfMesh.material[1] = standardShelfDarkSlotMat;
+              if (standardShelfLabelMat) halfShelfMesh.material[2] = standardShelfLabelMat;
+              if (standardShelfSteelMat) halfShelfMesh.material[3] = standardShelfSteelMat;
+            } else {
+              halfShelfMesh.material = standardShelfWoodMat;
+            }
+          }
         }
 
         scene.add(model);
@@ -956,9 +1024,11 @@ function loadLibraryModel() {
         loadDoorModel();
         loadPlaqueModel();
 
-        // Apply initial room wall distance (from localStorage or recommended 0.80m)
+        // Apply initial room wall dimensions (Width, Length, Height)
         const savedDist = parseFloat(localStorage.getItem('smart_library_wall_distance')) || 0.80;
-        updateWallDistance(savedDist, false);
+        const savedLen = parseFloat(localStorage.getItem('smart_library_wall_length')) || 0.00;
+        const savedHeight = parseFloat(localStorage.getItem('smart_library_wall_height')) || 2.68;
+        updateRoomDimensions(savedDist, savedLen, savedHeight, false);
 
         // Populate 3D books on the shelves
         rebuildAll3DBooks();
@@ -1014,63 +1084,101 @@ function showLoadingError(message) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ type: 'MODEL_LOAD_ERROR', message })
     });
-  } catch (e) {}
+  } catch (e) { }
 }
 
 // ==========================================================================
-// Dynamic Room & Wall Spacing Controller
+// Dynamic Room & Wall Dimensions Controller (Width, Length, Height)
 // ==========================================================================
-function updateWallDistance(distanceInMeters, persist = true) {
-  const dist = Math.max(0.088, Math.min(5.0, parseFloat(distanceInMeters) || 0.80));
-  state.roomArchitecture.wallDistance = dist;
+function updateRoomDimensions(widthDist, lengthDist, heightDist, persist = true) {
+  const distX = Math.max(0.088, Math.min(5.0, parseFloat(widthDist) ?? state.roomArchitecture.wallDistance ?? 0.80));
+  const distZ = Math.max(0.00, Math.min(5.0, parseFloat(lengthDist) ?? state.roomArchitecture.wallLength ?? 0.00));
+  const heightY = Math.max(2.40, Math.min(6.0, parseFloat(heightDist) ?? state.roomArchitecture.wallHeight ?? 2.68));
 
-  const wallX = 6.642 + dist;
-  const scaleRatio = wallX / 6.73;
+  state.roomArchitecture.wallDistance = distX;
+  state.roomArchitecture.wallLength = distZ;
+  state.roomArchitecture.wallHeight = heightY;
+  state.roomArchitecture.ceilingY = heightY;
+
+  const wallX = 6.642 + distX;
+  const scaleRatioX = wallX / 6.73;
   const newFrontWidth = wallX - 0.75;
   const frontScale = newFrontWidth / 5.98;
 
-  const { leftWall, rightWall, floor, backWall, frontLeftWall, frontRightWall, ceiling } = state.roomArchitecture;
+  const wallZ = 7.41 + distZ;
+  const scaleRatioZ = wallZ / 7.41;
+  const heightScale = heightY / 2.64;
 
-  if (leftWall) leftWall.position.x = -wallX;
-  if (rightWall) rightWall.position.x = wallX;
-  if (floor) floor.scale.x = scaleRatio;
-  if (ceiling) ceiling.scale.x = scaleRatio;
-  if (backWall) backWall.scale.x = scaleRatio;
+  const { leftWall, rightWall, floor, backWall, frontLeftWall, frontRightWall } = state.roomArchitecture;
+
+  // X scaling (Width) & Z / Y scaling
+  if (leftWall) {
+    leftWall.position.x = -wallX;
+    leftWall.scale.y = heightScale;
+    leftWall.scale.z = scaleRatioZ;
+    leftWall.position.y = 1.32 * heightScale;
+  }
+  if (rightWall) {
+    rightWall.position.x = wallX;
+    rightWall.scale.y = heightScale;
+    rightWall.scale.z = scaleRatioZ;
+    rightWall.position.y = 1.32 * heightScale;
+  }
+  if (floor) {
+    floor.scale.x = scaleRatioX;
+    floor.scale.z = scaleRatioZ;
+  }
+  if (backWall) {
+    backWall.position.z = -wallZ;
+    backWall.scale.x = scaleRatioX;
+    backWall.scale.y = heightScale;
+    backWall.position.y = 1.32 * heightScale;
+  }
   if (frontLeftWall) {
     frontLeftWall.scale.x = frontScale;
+    frontLeftWall.scale.y = heightScale;
     frontLeftWall.position.x = -0.75 - newFrontWidth / 2;
+    frontLeftWall.position.y = 1.32 * heightScale;
   }
   if (frontRightWall) {
     frontRightWall.scale.x = frontScale;
+    frontRightWall.scale.y = heightScale;
     frontRightWall.position.x = 0.75 + newFrontWidth / 2;
+    frontRightWall.position.y = 1.32 * heightScale;
   }
 
-  // Update UI display if slider / badge exists
-  const slider = document.getElementById('wall-distance-slider');
-  const valueDisplay = document.getElementById('wall-distance-value');
-  if (slider) slider.value = dist;
-  if (valueDisplay) {
-    const cm = Math.round(dist * 100);
-    valueDisplay.textContent = dist >= 1.0 ? `${dist.toFixed(2)} m (${cm} cm)` : `${cm} cm`;
+  // Ceiling scaling & height
+  if (state.ceilingGroup) {
+    state.ceilingGroup.position.y = heightY - 2.68;
+    state.ceilingGroup.scale.x = scaleRatioX;
+    state.ceilingGroup.scale.z = scaleRatioZ;
   }
 
-  // Highlight active preset button if matched
-  document.querySelectorAll('.preset-dist-btn').forEach(btn => {
-    const bDist = parseFloat(btn.dataset.dist);
-    if (Math.abs(bDist - dist) < 0.03) {
-      btn.style.borderColor = '#3b82f6';
-      btn.style.color = '#38bdf8';
-      btn.style.background = 'rgba(59, 130, 246, 0.2)';
-    } else {
-      btn.style.borderColor = '';
-      btn.style.color = '';
-      btn.style.background = '';
-    }
-  });
+  // Update slider displays
+  const distSlider = document.getElementById('wall-distance-slider');
+  const distVal = document.getElementById('wall-distance-value');
+  if (distSlider) distSlider.value = distX;
+  if (distVal) distVal.textContent = `${distX.toFixed(2)} m`;
+
+  const lengthSlider = document.getElementById('wall-length-slider');
+  const lengthVal = document.getElementById('wall-length-value');
+  if (lengthSlider) lengthSlider.value = distZ;
+  if (lengthVal) lengthVal.textContent = distZ > 0 ? `+${distZ.toFixed(2)} m` : `0.00 m`;
+
+  const heightSlider = document.getElementById('wall-height-slider');
+  const heightVal = document.getElementById('wall-height-value');
+  if (heightSlider) heightSlider.value = heightY;
+  if (heightVal) heightVal.textContent = `${heightY.toFixed(2)} m`;
 
   if (persist) {
-    localStorage.setItem('smart_library_wall_distance', dist.toString());
+    localStorage.setItem('smart_library_wall_distance', distX.toString());
+    localStorage.setItem('smart_library_wall_length', distZ.toString());
+    localStorage.setItem('smart_library_wall_height', heightY.toString());
   }
+}
+
+function updateWallDistance(distanceInMeters, persist = true) {
+  updateRoomDimensions(distanceInMeters, state.roomArchitecture.wallLength, state.roomArchitecture.wallHeight, persist);
 }
 
 // ==========================================================================
@@ -1335,7 +1443,7 @@ function computeShelfSlotCoordinates(targetShelf, rackNum, bayNum, slotInBay, fa
     5: 1.724  // Top rack (Plank at 1.604)
   };
 
-  const levelY = (rackLevels[rackNum] || 0.965) + (targetShelf.is_half ? 0.055 : 0);
+  const levelY = rackLevels[rackNum] || 0.965;
   const shelfBaseX = targetShelf.three_pos[0];
   const shelfBaseY = targetShelf.three_pos[1];
   const shelfBaseZ = targetShelf.three_pos[2];
@@ -1585,6 +1693,7 @@ function focusOnBook(bookMesh) {
   // If outside entrance, open door smoothly and hide entrance overlay
   const isOutside = camera.position.z > 7.4;
   if (isOutside) {
+    document.body.classList.remove('at-entrance');
     const overlay = document.getElementById('entrance-gate-overlay');
     if (overlay) overlay.classList.add('hidden');
     if (doorHingePivot && !isDoorOpen) {
@@ -1763,30 +1872,30 @@ function putBackBook(resetCamera = true) {
       hideBookInspectCard();
     }
   })
-  .to(bookMesh.position, {
-    x: originalPos.x,
-    y: originalPos.y + 0.14,
-    z: originalPos.z + zSign * 0.16, // position directly above its gap
-    duration: 0.65,
-    ease: 'power2.inOut'
-  })
-  .to(bookMesh.rotation, {
-    x: originalRot.x,
-    y: originalRot.y,
-    z: originalRot.z,
-    duration: 0.65,
-    ease: 'power2.inOut'
-  }, '-=0.65')
-  .to(bookMesh.position, {
-    y: originalPos.y, // lower down into the gap
-    duration: 0.3,
-    ease: 'power2.in'
-  })
-  .to(bookMesh.position, {
-    z: originalPos.z, // slide back flush into the row!
-    duration: 0.25,
-    ease: 'power2.out'
-  });
+    .to(bookMesh.position, {
+      x: originalPos.x,
+      y: originalPos.y + 0.14,
+      z: originalPos.z + zSign * 0.16, // position directly above its gap
+      duration: 0.65,
+      ease: 'power2.inOut'
+    })
+    .to(bookMesh.rotation, {
+      x: originalRot.x,
+      y: originalRot.y,
+      z: originalRot.z,
+      duration: 0.65,
+      ease: 'power2.inOut'
+    }, '-=0.65')
+    .to(bookMesh.position, {
+      y: originalPos.y, // lower down into the gap
+      duration: 0.3,
+      ease: 'power2.in'
+    })
+    .to(bookMesh.position, {
+      z: originalPos.z, // slide back flush into the row!
+      duration: 0.25,
+      ease: 'power2.out'
+    });
 
   if (resetCamera) {
     gsap.to(camera.position, {
@@ -1851,7 +1960,17 @@ function onCanvasClick(event) {
   if (bookIntersects.length > 0) {
     const clickedMesh = bookIntersects[0].object;
     if (clickedMesh.userData && clickedMesh.userData.isBook) {
-      document.getElementById('shelf-inspect-card').style.display = 'none';
+      // If this book is already elevated: return it to its slot immediately on touch!
+      if (state.focusedBookMesh === clickedMesh) {
+        sfx.playClick();
+        putBackBook(true);
+        return;
+      }
+      if (state.focusedBookMesh) {
+        putBackBook(false);
+      }
+      const shelfCard = document.getElementById('shelf-inspect-card');
+      if (shelfCard) shelfCard.style.display = 'none';
       focusOnBook(clickedMesh);
       return;
     }
@@ -1891,6 +2010,204 @@ function onCanvasClick(event) {
 }
 
 // ==========================================================================
+// 3-Line Menu Drawer Categories Population
+// ==========================================================================
+function populateDrawerCategories() {
+  const container = document.getElementById('drawer-categories-list');
+  if (!container) return;
+  container.innerHTML = state.categories.map(cat => {
+    return `
+      <div class="drawer-cat-chip" data-category="${cat.id}">
+        <span class="drawer-cat-dot" style="background: ${cat.color || '#38bdf8'};"></span>
+        <span class="drawer-cat-name">${cat.name.split(' ')[0]}</span>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.drawer-cat-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      sfx.playClick();
+      const catId = chip.dataset.category;
+      state.isOverviewMode = false;
+      const cat = state.categories.find(c => c.id === catId);
+      if (cat) {
+        const shelf = state.shelves.find(s => s.category === catId) ||
+          state.shelves.find(s => s.side === cat.side && cat.rows && cat.rows.includes(s.row));
+        if (shelf) {
+          const z = shelf.three_pos[2];
+          const x = cat.side === 'left' ? -2.2 : 2.2;
+          if (camera) gsap.to(camera.position, { x: 0, y: 1.6, z: z, duration: 1.2, ease: 'power2.inOut' });
+          if (controls && controls.target) gsap.to(controls.target, { x: x, y: 1.1, z: z, duration: 1.4, ease: 'power2.inOut' });
+        }
+      }
+      const menuDrawer = document.getElementById('menu-drawer');
+      const menuBackdrop = document.getElementById('menu-drawer-backdrop');
+      if (menuDrawer) menuDrawer.classList.remove('active');
+      if (menuBackdrop) menuBackdrop.classList.remove('active');
+    });
+  });
+}
+
+// ==========================================================================
+// Data Ingestion Terminal & Smart Middle-Out Shelf Placement
+// ==========================================================================
+let parsedTerminalBooks = [];
+
+function openDataTerminalModal() {
+  const modal = document.getElementById('data-terminal-modal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  if (window.lucide && window.lucide.createIcons) {
+    try { lucide.createIcons(); } catch (e) { }
+  }
+}
+
+function parseTerminalData(rawText) {
+  if (!rawText || !rawText.trim()) return [];
+  const text = rawText.trim();
+  const books = [];
+
+  // 1. JSON Array
+  if (text.startsWith('[') && text.endsWith(']')) {
+    try {
+      const arr = JSON.parse(text);
+      if (Array.isArray(arr)) {
+        arr.forEach(item => {
+          if (item.title || item.name) {
+            books.push({
+              title: item.title || item.name || 'Untitled Book',
+              author: item.author || item.writer || 'Unknown Author',
+              category: item.category || item.genre || item.section || 'General',
+              barcode: item.barcode || item.isbn || item.code || ('978' + Math.floor(1000000000 + Math.random() * 9000000000)),
+              book_number: item.book_number || item.id || item.number || ('B-' + Math.floor(100 + Math.random() * 900))
+            });
+          }
+        });
+        if (books.length > 0) return books;
+      }
+    } catch (e) { }
+  }
+
+  // 2. SQL INSERT INTO ... VALUES (...)
+  const sqlValuesMatch = text.match(/VALUES\s*([\s\S]+)/i);
+  const sqlText = sqlValuesMatch ? sqlValuesMatch[1] : text;
+  const tupleRegex = /\(([^)]+)\)/g;
+  let tupleMatch;
+  while ((tupleMatch = tupleRegex.exec(sqlText)) !== null) {
+    const rawFields = tupleMatch[1];
+    const fields = [];
+    const fieldRegex = /(?:'([^']*)'|"([^"]*)"|([^,]+))/g;
+    let fm;
+    while ((fm = fieldRegex.exec(rawFields)) !== null) {
+      const val = (fm[1] !== undefined ? fm[1] : (fm[2] !== undefined ? fm[2] : fm[3])).trim();
+      fields.push(val);
+    }
+    if (fields.length >= 2) {
+      books.push({
+        title: fields[0] || 'Untitled Book',
+        author: fields[1] || 'Unknown Author',
+        category: fields[2] || 'General',
+        barcode: fields[3] || ('978' + Math.floor(1000000000 + Math.random() * 9000000000)),
+        book_number: fields[4] || ('B-' + Math.floor(100 + Math.random() * 900))
+      });
+    }
+  }
+  if (books.length > 0) return books;
+
+  // 3. Delimited text (CSV, Pipe, Tab)
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  const isHeader = (l) => /title|author|book|പേര്|എഴുത്തുകാരൻ/i.test(l);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (i === 0 && isHeader(line)) continue;
+    let cols = [];
+    if (line.includes('|')) cols = line.split('|');
+    else if (line.includes('\t')) cols = line.split('\t');
+    else if (line.includes(',')) cols = line.split(',');
+    else cols = [line];
+
+    cols = cols.map(c => c.trim().replace(/^['"]|['"]$/g, ''));
+    if (cols.length >= 1 && cols[0]) {
+      books.push({
+        title: cols[0],
+        author: cols[1] || 'Unknown Author',
+        category: cols[2] || 'General',
+        barcode: cols[3] || ('978' + Math.floor(1000000000 + Math.random() * 9000000000)),
+        book_number: cols[4] || ('B-' + Math.floor(100 + Math.random() * 900))
+      });
+    }
+  }
+
+  return books;
+}
+
+// Allocator: Fills middle rack (Rack 3) -> upper (4, 5) -> lower (2, 1)
+function allocateMiddleOutSlot(category, assignedSlots) {
+  const catLower = (category || '').toLowerCase();
+  let matchedCat = state.categories.find(c => c.id.toLowerCase() === catLower || c.name.toLowerCase().includes(catLower));
+  if (!matchedCat) {
+    matchedCat = state.categories[0] || { id: 'general', name: 'General', side: 'left' };
+  }
+
+  let candidateShelves = state.shelves.filter(s => s.category === matchedCat.id || s.category_front === matchedCat.id || s.category_back === matchedCat.id);
+  if (candidateShelves.length === 0) {
+    candidateShelves = state.shelves.filter(s => s.side === matchedCat.side);
+  }
+  if (candidateShelves.length === 0) candidateShelves = state.shelves;
+
+  // Priority order: Rack 3 (middle) -> Rack 4 -> Rack 5 -> Rack 2 -> Rack 1
+  const rackPriority = [3, 4, 5, 2, 1];
+
+  for (const shelf of candidateShelves) {
+    const faces = (shelf.category_mode === 'split' && shelf.category_back === matchedCat.id) ? ['back', 'front'] : ['front', 'back'];
+    for (const face of faces) {
+      for (const rack of rackPriority) {
+        const totalBays = shelf.is_half ? 1 : 2;
+        for (let bay = 1; bay <= totalBays; bay++) {
+          for (let slot = 1; slot <= 14; slot++) {
+            const key = `${shelf.name}_${face}_${rack}_${bay}_${slot}`;
+            const isOccupiedInState = state.books.some(b => {
+              if (b.customShelf === shelf.name) {
+                const s = b.customSlot || {};
+                return s.rack === rack && s.bay === bay && s.slotInBay === slot && (s.face || 'front') === face;
+              }
+              return false;
+            });
+            const isOccupiedInBatch = assignedSlots.has(key);
+
+            if (!isOccupiedInState && !isOccupiedInBatch) {
+              assignedSlots.add(key);
+              return {
+                shelf: shelf.name,
+                shelfObj: shelf,
+                face,
+                rack,
+                bay,
+                slotInBay: slot,
+                category: matchedCat.id,
+                categoryName: matchedCat.name
+              };
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    shelf: candidateShelves[0].name,
+    shelfObj: candidateShelves[0],
+    face: 'front',
+    rack: 3,
+    bay: 1,
+    slotInBay: 1,
+    category: matchedCat.id,
+    categoryName: matchedCat.name
+  };
+}
+
+// ==========================================================================
 // Search & Filter System
 // ==========================================================================
 function setupEventListeners() {
@@ -1924,6 +2241,45 @@ function setupEventListeners() {
     }
   });
 
+  // Language Switcher (ML / EN) - Matches user screenshot
+  function setLanguage(lang) {
+    state.lang = lang;
+    localStorage.setItem('smart_lib_lang', lang);
+
+    const mlBtn = document.getElementById('lang-ml-btn');
+    const enBtn = document.getElementById('lang-en-btn');
+    if (mlBtn && enBtn) {
+      if (lang === 'en') {
+        enBtn.classList.add('active');
+        mlBtn.classList.remove('active');
+      } else {
+        mlBtn.classList.add('active');
+        enBtn.classList.remove('active');
+      }
+    }
+
+    const brandText = document.getElementById('entrance-brand-text');
+    const enterText = document.getElementById('entrance-enter-text');
+    if (brandText) {
+      brandText.textContent = lang === 'en' ? '3D Smart Library' : '3D സ്മാർട്ട് ലൈബ്രറി';
+    }
+    if (enterText) {
+      enterText.textContent = lang === 'en' ? 'Enter Library' : 'ലൈബ്രറിയിൽ പ്രവേശിക്കുക';
+    }
+  }
+
+  addSafeListener('lang-ml-btn', 'click', () => {
+    sfx.playClick();
+    setLanguage('ml');
+  });
+  addSafeListener('lang-en-btn', 'click', () => {
+    sfx.playClick();
+    setLanguage('en');
+  });
+
+  const savedLang = localStorage.getItem('smart_lib_lang') || 'en';
+  setLanguage(savedLang);
+
   // Entrance Gate Enter Button
   addSafeListener('gate-enter-btn', 'click', () => {
     openDoorAndEnter();
@@ -1944,8 +2300,275 @@ function setupEventListeners() {
       btn.innerHTML = '<i data-lucide="zap"></i><span id="camera-mode-label">ഫ്രീ ഫ്ലൈറ്റ്</span>';
     }
     if (window.lucide && window.lucide.createIcons) {
-      try { lucide.createIcons(); } catch (e) {}
+      try { lucide.createIcons(); } catch (e) { }
     }
+  }
+
+  // 3-Line Hamburger Menu & Slide-out Drawer
+  const menuToggleBtn = document.getElementById('menu-toggle-btn');
+  const menuDrawer = document.getElementById('menu-drawer');
+  const menuBackdrop = document.getElementById('menu-drawer-backdrop');
+  const closeDrawerBtn = document.getElementById('close-drawer-btn');
+
+  function openDrawer() {
+    sfx.playClick();
+    if (menuDrawer) menuDrawer.classList.add('active');
+    if (menuBackdrop) menuBackdrop.classList.add('active');
+    populateDrawerCategories();
+    updateCameraModeUI();
+    updateDoorButtonUI();
+  }
+
+  function closeDrawer() {
+    sfx.playClick();
+    if (menuDrawer) menuDrawer.classList.remove('active');
+    if (menuBackdrop) menuBackdrop.classList.remove('active');
+  }
+
+  if (menuToggleBtn) menuToggleBtn.addEventListener('click', openDrawer);
+  if (closeDrawerBtn) closeDrawerBtn.addEventListener('click', closeDrawer);
+  if (menuBackdrop) menuBackdrop.addEventListener('click', closeDrawer);
+
+  addSafeListener('drawer-door-btn', 'click', () => {
+    sfx.playClick();
+    if (state.focusedBookMesh) putBackBook(false);
+    if (!isDoorOpen) {
+      openDoorAndEnter();
+    } else {
+      closeDoorAndExit();
+    }
+    closeDrawer();
+  });
+
+  addSafeListener('drawer-camera-mode-btn', 'click', () => {
+    state.cameraMode = state.cameraMode === 'systematic' ? 'free' : 'systematic';
+    localStorage.setItem('lib_camera_mode', state.cameraMode);
+    sfx.playClick();
+    updateCameraModeUI();
+  });
+
+  addSafeListener('drawer-overview-btn', 'click', () => {
+    sfx.playClick();
+    if (state.focusedBookMesh) putBackBook(false);
+    state.isOverviewMode = true;
+    gsap.to(camera.position, { x: 0, y: 8.5, z: 8.0, duration: 1.8, ease: 'power2.inOut' });
+    gsap.to(controls.target, { x: 0, y: 0.5, z: 0, duration: 1.8, ease: 'power2.inOut' });
+    closeDrawer();
+  });
+
+  addSafeListener('drawer-terminal-btn', 'click', () => {
+    sfx.playClick();
+    openDataTerminalModal();
+    closeDrawer();
+  });
+
+  addSafeListener('drawer-add-book-btn', 'click', () => {
+    sfx.playClick();
+    const adminModal = document.getElementById('admin-modal');
+    if (adminModal) {
+      adminModal.style.display = 'flex';
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const formTab = document.querySelector('.tab-btn[data-tab="form"]');
+      if (formTab) formTab.classList.add('active');
+      document.getElementById('add-book-form').style.display = 'flex';
+      document.getElementById('manage-books-tab').style.display = 'none';
+      document.getElementById('shelves-tab').style.display = 'none';
+      if (window.lucide && window.lucide.createIcons) lucide.createIcons();
+    }
+    closeDrawer();
+  });
+
+  addSafeListener('drawer-shelves-btn', 'click', () => {
+    sfx.playClick();
+    const adminModal = document.getElementById('admin-modal');
+    if (adminModal) {
+      adminModal.style.display = 'flex';
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const shelvesTabBtn = document.querySelector('.tab-btn[data-tab="shelves"]');
+      if (shelvesTabBtn) shelvesTabBtn.classList.add('active');
+      document.getElementById('add-book-form').style.display = 'none';
+      document.getElementById('manage-books-tab').style.display = 'none';
+      document.getElementById('shelves-tab').style.display = 'flex';
+      renderShelvesTable();
+      if (window.lucide && window.lucide.createIcons) lucide.createIcons();
+    }
+    closeDrawer();
+  });
+
+  addSafeListener('drawer-room-btn', 'click', () => {
+    sfx.playClick();
+    const roomModal = document.getElementById('room-settings-modal');
+    if (roomModal) roomModal.style.display = 'flex';
+    closeDrawer();
+  });
+
+  // Room Wall Sliders
+  const wallDistSlider = document.getElementById('wall-distance-slider');
+  const wallLengthSlider = document.getElementById('wall-length-slider');
+  const wallHeightSlider = document.getElementById('wall-height-slider');
+
+  if (wallDistSlider) {
+    wallDistSlider.addEventListener('input', (e) => {
+      updateRoomDimensions(e.target.value, state.roomArchitecture.wallLength, state.roomArchitecture.wallHeight);
+    });
+  }
+  if (wallLengthSlider) {
+    wallLengthSlider.addEventListener('input', (e) => {
+      updateRoomDimensions(state.roomArchitecture.wallDistance, e.target.value, state.roomArchitecture.wallHeight);
+    });
+  }
+  if (wallHeightSlider) {
+    wallHeightSlider.addEventListener('input', (e) => {
+      updateRoomDimensions(state.roomArchitecture.wallDistance, state.roomArchitecture.wallLength, e.target.value);
+    });
+  }
+  addSafeListener('close-room-modal-btn', 'click', () => {
+    const roomModal = document.getElementById('room-settings-modal');
+    if (roomModal) roomModal.style.display = 'none';
+  });
+  addSafeListener('done-room-modal-btn', 'click', () => {
+    const roomModal = document.getElementById('room-settings-modal');
+    if (roomModal) roomModal.style.display = 'none';
+  });
+
+  // Data Terminal Modal listeners
+  addSafeListener('close-terminal-modal-btn', 'click', () => {
+    const termModal = document.getElementById('data-terminal-modal');
+    if (termModal) termModal.style.display = 'none';
+  });
+
+  const termInput = document.getElementById('terminal-data-input');
+  const analyzeBtn = document.getElementById('analyze-terminal-data-btn');
+  const importBtn = document.getElementById('import-terminal-books-btn');
+  const previewSection = document.getElementById('terminal-preview-section');
+  const previewTbody = document.getElementById('terminal-preview-tbody');
+  const parsedCountEl = document.getElementById('parsed-books-count');
+
+  addSafeListener('template-sql-btn', 'click', () => {
+    if (termInput) {
+      termInput.value = `INSERT INTO books (title, author, category, barcode, book_number) VALUES
+('ആടുജീവിതം', 'ബെന്യാമിൻ', 'നോവലുകൾ', '978817208101', 'B-101'),
+('രണ്ടാമൂഴം', 'എം.ടി. വാസുദേവൻ നായർ', 'നോവലുകൾ', '978817208102', 'B-102'),
+('ഭൂമിയുടെ അവകാശികൾ', 'വൈക്കം മുഹമ്മദ് ബഷീർ', 'സാഹിത്യം', '978817208103', 'B-103'),
+('ബ്രീഫ് ഹിസ്റ്ററി ഓഫ് ടൈം', 'സ്റ്റീഫൻ ഹോക്കിംഗ്', 'സയൻസ് & ടെക്നോളജി', '978817208104', 'B-104');`;
+    }
+  });
+
+  addSafeListener('template-csv-btn', 'click', () => {
+    if (termInput) {
+      termInput.value = `Title, Author, Category, Barcode, Book Number
+മയ്യഴിപ്പുഴയുടെ തീരങ്ങളിൽ, എം. മുകുന്ദൻ, നോവലുകൾ, 978817208105, B-105
+ഖസാക്കിന്റെ ഇതിഹാസം, ഒ.വി. വിജയൻ, സാഹിത്യം, 978817208106, B-106
+കോസ്‌മോസ്, കാൾ സാഗൻ, സയൻസ് & ടെക്നോളജി, 978817208107, B-107`;
+    }
+  });
+
+  addSafeListener('template-json-btn', 'click', () => {
+    if (termInput) {
+      termInput.value = `[
+  { "title": "ഒരു സങ്കീർത്തനം പോലെ", "author": "പെരുമ്പടവം ശ്രീധരൻ", "category": "നോവലുകൾ", "barcode": "978817208108", "book_number": "B-108" },
+  { "title": "ഐൻസ്റ്റീന്റെ സിദ്ധാന്തം", "author": "ഡോ. എ.പി.ജെ", "category": "സയൻസ് & ടെക്നോളജി", "barcode": "978817208109", "book_number": "B-109" }
+]`;
+    }
+  });
+
+  addSafeListener('clear-terminal-btn', 'click', () => {
+    if (termInput) termInput.value = '';
+    if (previewSection) previewSection.style.display = 'none';
+    if (importBtn) {
+      importBtn.disabled = true;
+      if (parsedCountEl) parsedCountEl.textContent = '0';
+    }
+    parsedTerminalBooks = [];
+  });
+
+  if (analyzeBtn) {
+    analyzeBtn.addEventListener('click', () => {
+      sfx.playClick();
+      const raw = termInput ? termInput.value : '';
+      const list = parseTerminalData(raw);
+      if (list.length === 0) {
+        alert('ഡാറ്റ കണ്ടെത്തിയില്ല! ദയവായി സാധുവായ SQL, CSV, അല്ലെങ്കിൽ JSON ഫോർമാറ്റിൽ നൽകുക.');
+        return;
+      }
+
+      // Middle-out slot allocation
+      const assignedSlots = new Set();
+      parsedTerminalBooks = list.map(b => {
+        const alloc = allocateMiddleOutSlot(b.category, assignedSlots);
+        return { ...b, alloc };
+      });
+
+      if (parsedCountEl) parsedCountEl.textContent = parsedTerminalBooks.length;
+      if (importBtn) importBtn.disabled = false;
+
+      // Render preview table
+      if (previewTbody) {
+        previewTbody.innerHTML = parsedTerminalBooks.map(b => {
+          return `
+            <tr>
+              <td><strong>${b.title}</strong></td>
+              <td>${b.author}</td>
+              <td><span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-size: 0.76rem;">${b.alloc.categoryName}</span></td>
+              <td><code>${b.barcode}</code></td>
+              <td>${b.book_number}</td>
+              <td><span style="color: #34d399; font-weight: 700;">${b.alloc.shelf} • Rack ${b.alloc.rack}</span></td>
+            </tr>
+          `;
+        }).join('');
+      }
+      if (previewSection) previewSection.style.display = 'block';
+    });
+  }
+
+  if (importBtn) {
+    importBtn.addEventListener('click', () => {
+      if (parsedTerminalBooks.length === 0) return;
+      sfx.playClick();
+
+      const palette = ['#1e3a8a', '#991b1b', '#065f46', '#854d0e', '#581c87', '#155e75', '#831843'];
+      parsedTerminalBooks.forEach((b, idx) => {
+        const newBook = {
+          id: b.book_number || `BK-${Date.now()}-${idx}`,
+          title: b.title,
+          author: b.author,
+          category: b.alloc.category,
+          barcode: b.barcode,
+          color: palette[idx % palette.length],
+          customShelf: b.alloc.shelf,
+          customSlot: {
+            face: b.alloc.face,
+            rack: b.alloc.rack,
+            bay: b.alloc.bay,
+            slotInBay: b.alloc.slotInBay
+          }
+        };
+        state.books.push(newBook);
+      });
+
+      try {
+        localStorage.setItem('smart_library_custom_books', JSON.stringify(state.books));
+      } catch (e) { }
+
+      rebuildAll3DBooks();
+      renderManageBooksTable();
+
+      const modal = document.getElementById('data-terminal-modal');
+      if (modal) modal.style.display = 'none';
+
+      alert(`${parsedTerminalBooks.length} ബുക്കുകൾ ഷെൽഫിൽ മിഡിൽ-ഔട്ട് ഓർഡറിൽ (Rack 3 നടുവിൽ നിന്ന്) വിജയകരമായി ചേർത്തു!`);
+
+      if (parsedTerminalBooks.length > 0 && parsedTerminalBooks[0].alloc) {
+        const firstShelf = parsedTerminalBooks[0].alloc.shelfObj;
+        if (firstShelf) {
+          state.isOverviewMode = false;
+          const targetX = firstShelf.side === 'left' ? -2.2 : 2.2;
+          gsap.to(camera.position, { x: 0, y: 1.6, z: firstShelf.three_pos[2], duration: 1.4, ease: 'power2.inOut' });
+          gsap.to(controls.target, { x: targetX, y: 1.1, z: firstShelf.three_pos[2], duration: 1.5, ease: 'power2.inOut' });
+        }
+      }
+      parsedTerminalBooks = [];
+    });
   }
 
   addSafeListener('camera-mode-btn', 'click', () => {
@@ -1971,6 +2594,7 @@ function setupEventListeners() {
   addSafeListener('overview-cam-btn', 'click', () => {
     sfx.playClick();
     if (state.focusedBookMesh) putBackBook(false);
+    state.isOverviewMode = true;
     gsap.to(camera.position, { x: 0, y: 8.5, z: 8.0, duration: 1.8, ease: 'power2.inOut' });
     gsap.to(controls.target, { x: 0, y: 0.5, z: 0, duration: 1.8, ease: 'power2.inOut' });
   });
@@ -2164,9 +2788,30 @@ function setupEventListeners() {
       const shelf = state.inspectedShelf;
       const isSplit = modeSplitRadio && modeSplitRadio.checked;
 
-      const singleCatId = document.getElementById('shelf-quick-cat-select').value;
+      let singleCatId = document.getElementById('shelf-quick-cat-select').value;
       const frontCatId = document.getElementById('shelf-front-cat-select') ? document.getElementById('shelf-front-cat-select').value : singleCatId;
       const backCatId = document.getElementById('shelf-back-cat-select') ? document.getElementById('shelf-back-cat-select').value : singleCatId;
+
+      const customNameInput = document.getElementById('shelf-cat-custom-name');
+      const customName = customNameInput ? customNameInput.value.trim() : '';
+
+      if (customName && !isSplit) {
+        let found = state.categories.find(c => c.name.toLowerCase() === customName.toLowerCase());
+        if (!found) {
+          const newId = 'cat_' + Date.now();
+          found = {
+            id: newId,
+            name: customName,
+            color: '#38bdf8',
+            side: shelf.side,
+            rows: [shelf.row]
+          };
+          state.categories.push(found);
+          populateCategorySelect();
+          populateDrawerCategories();
+        }
+        singleCatId = found.id;
+      }
 
       shelf.category_mode = isSplit ? 'split' : 'single';
       shelf.category = singleCatId;
@@ -2376,8 +3021,8 @@ function renderCategoryPills() {
       } else {
         const cat = state.categories.find(c => c.id === catId);
         if (cat) {
-          const shelf = state.shelves.find(s => s.category === catId) || 
-                        state.shelves.find(s => s.side === cat.side && cat.rows && cat.rows.includes(s.row));
+          const shelf = state.shelves.find(s => s.category === catId) ||
+            state.shelves.find(s => s.side === cat.side && cat.rows && cat.rows.includes(s.row));
           if (shelf) {
             const z = shelf.three_pos[2];
             const x = cat.side === 'left' ? -2.2 : 2.2;
@@ -2505,6 +3150,11 @@ function openShelfInspectCard(shelf) {
   const frontCat = state.categories.find(c => c.id === frontCatId);
   const backCat = state.categories.find(c => c.id === backCatId);
 
+  const customNameInput = document.getElementById('shelf-cat-custom-name');
+  if (customNameInput) {
+    customNameInput.value = isSplit ? `${(frontCat ? frontCat.name : '')} / ${(backCat ? backCat.name : '')}` : (currentCat ? currentCat.name : '');
+  }
+
   if (isSplit) {
     currentBadge.textContent = `${(frontCat ? frontCat.name : '').split(' ')[0]} / ${(backCat ? backCat.name : '').split(' ')[0]}`;
     currentBadge.style.color = '#38bdf8';
@@ -2537,8 +3187,8 @@ function openShelfInspectCard(shelf) {
   }
 
   const booksOnShelf = state.books.filter(b => {
-    return b.customShelf === shelf.name || 
-           (!b.customShelf && (b.category === singleCatId || (isSplit && (b.category === frontCatId || b.category === backCatId))));
+    return b.customShelf === shelf.name ||
+      (!b.customShelf && (b.category === singleCatId || (isSplit && (b.category === frontCatId || b.category === backCatId))));
   });
   countEl.textContent = `${booksOnShelf.length} പുസ്തകങ്ങൾ`;
 
@@ -2614,7 +3264,7 @@ function renderShelvesTable(wingFilter = 'all') {
 
   tbody.innerHTML = rows.map(r => {
     const sideMalayalam = r.side === 'left' ? 'ഇടതുഭാഗം' : 'വലതുഭാഗം';
-    const currentCatId = r.shelves[0].category || 
+    const currentCatId = r.shelves[0].category ||
       (state.categories.find(c => c.side === r.side && c.rows && c.rows.includes(r.row)) || {}).id;
     const catObj = state.categories.find(c => c.id === currentCatId);
     const catName = catObj ? catObj.name : 'നിശ്ചയിച്ചിട്ടില്ല';
@@ -3012,7 +3662,7 @@ function renderManageBooksTable() {
       if (confirm('ഈ ബുക്ക് ലൈബ്രറിയിൽ നിന്ന് നീക്കം ചെയ്യണമെന്നുറപ്പാണോ?')) {
         try {
           await fetch(`/api/books/${id}`, { method: 'DELETE' });
-        } catch (e) {}
+        } catch (e) { }
 
         state.books = state.books.filter(b => b.id !== id);
         rebuildAll3DBooks();
@@ -3041,9 +3691,22 @@ function animate() {
     controls.update();
   }
 
-  // Dynamic ceiling visibility: Hide ceiling when viewing from above (e.g. Overview camera at y=8.5)
+  // Camera ceiling confinement inside the library
+  if (camera && !document.body.classList.contains('at-entrance') && !state.isOverviewMode) {
+    if (camera.position.z <= 7.2) {
+      const ceilLimit = (state.roomArchitecture.ceilingY || 2.68) - 0.22;
+      if (camera.position.y > ceilLimit) {
+        camera.position.y = ceilLimit;
+      }
+      if (camera.position.y < 0.35) {
+        camera.position.y = 0.35;
+      }
+    }
+  }
+
+  // Dynamic ceiling visibility: Hide ceiling ONLY when viewing from Overview mode
   if (state.ceilingGroup && camera) {
-    state.ceilingGroup.visible = camera.position.y < 2.8;
+    state.ceilingGroup.visible = !state.isOverviewMode;
   }
 
   // Gentle floating animation on focused book
@@ -3061,7 +3724,7 @@ function animate() {
 function startApplication() {
   init();
   if (window.lucide && window.lucide.createIcons) {
-    try { lucide.createIcons(); } catch (e) {}
+    try { lucide.createIcons(); } catch (e) { }
   }
 }
 

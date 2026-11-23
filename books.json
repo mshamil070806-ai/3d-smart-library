@@ -417,7 +417,11 @@
     "category": "poetry",
     "description": "യേശുക്രിസ്തുവിന്റെ കാരുണ്യത്താൽ വിശുദ്ധി നേടിയ മറിയത്തിന്റെ അനുതാപ കാവ്യം.",
     "color": "#be185d",
-    "year": "1921"
+    "year": "1921",
+    "customFace": "back",
+    "customRack": 3,
+    "customBay": 2,
+    "customSlot": 1
   },
   {
     "id": "BK-043",
